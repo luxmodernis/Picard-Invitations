@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070b1e">
+<title>Invitation</title>
+<style>
+  :root {
+    --bg-night: #0a0e2a;
+    --bg-deep: #070b1e;
+    --bg-2: #0d1535;
+    --bg-3: #10183a;
+    --gold: #c9a84c;
+    --gold-line: rgba(201, 168, 76, 0.15);
+    --body: #c8c8e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--body);
+    background: var(--bg-deep);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hide the native cursor only where we draw a custom one (desktop / hover devices) */
+  @media (hover: hover) and (pointer: fine) {
+    body.custom-cursor { cursor: none; }
+  }
+
+  h1, h2, h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--gold);
+    font-weight: normal;
+    text-shadow: 0 0 40px rgba(201, 168, 76, 0.3);
+    line-height: 1.15;
+  }
+
+  /* ---------- Particle canvas ---------- */
+  #particles {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ---------- Sections ---------- */
+  section {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 6vh 8vw;
+    overflow: hidden;
+  }
+
+  /* Decorative halos (CSS-only, no images) */
+  .halo {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+    opacity: 0.5;
+    z-index: 0;
+  }
+
+  .content { position: relative; z-index: 2; width: 100%; max-width: 1100px; }
+
+  /* ---------- Hero ---------- */
+  #hero {
+    background: radial-gradient(circle at 50% 30%, #0d1535 0%, var(--bg-night) 45%, var(--bg-deep) 100%);
+    text-align: center;
+  }
+  #hero .halo-a {
+    width: 520px; height: 520px;
+    top: -120px; left: 50%; transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(201,168,76,0.22), transparent 70%);
+  }
+  .hero-kicker {
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: rgba(201, 168, 76, 0.75);
+    margin-bottom: 1.6rem;
+  }
+  #hero h1 {
+    font-size: clamp(2.8rem, 9vw, 6rem);
+    margin-bottom: 1.4rem;
+  }
+  .hero-sub {
+    font-size: clamp(1rem, 2.4vw, 1.35rem);
+    font-weight: 300;
+    color: var(--body);
+    max-width: 38ch;
+    margin: 0 auto 3rem;
+    line-height: 1.7;
+  }
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(201, 168, 76, 0.7);
+    border: 1px solid var(--gold-line);
+    border-radius: 999px;
+    padding: 0.7rem 1.4rem;
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  .scroll-cue {
+    position: absolute;
+    bottom: 3vh; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 36px;
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    z-index: 2;
+  }
+  .scroll-cue::after {
+    content: "";
+    position: absolute;
+    top: 7px; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 7px; border-radius: 2px;
+    background: var(--gold);
+    animation: drop 1.8s ease-in-out infinite;
+  }
+  @keyframes drop {
+    0% { opacity: 0; transform: translate(-50%, 0); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, 12px); }
+  }
+
+  /* ---------- Section 2 : split ---------- */
+  #invite { background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-3) 100%); }
+  #invite .halo-b {
+    width: 420px; height: 420px;
+    bottom: -140px; right: -80px;
+    background: radial-gradient(circle, rgba(201,168,76,0.16), transparent 70%);
+  }
+  .split {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 5vw;
+    align-items: center;
+  }
+  .split h2 { font-size: clamp(2rem, 5vw, 3.2rem); margin-bottom: 1.4rem; }
+  .split p { font-size: 1.05rem; line-height: 1.9; margin-bottom: 1.1rem; }
+  .split .label {
+    display: block;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: rgba(201,168,76,0.7);
+    margin-bottom: 1rem;
+  }
+  /* CSS/SVG visual — no external asset */
+  .visual {
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--gold-line);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    position: relative;
+    background: radial-gradient(circle at 50% 40%, rgba(201,168,76,0.08), transparent 65%);
+  }
+  .visual::before, .visual::after {
+    content: "";
+    position: absolute;
+    border: 1px solid var(--gold-line);
+    border-radius: 50%;
+  }
+  .visual::before { inset: 12%; }
+  .visual::after { inset: 26%; border-color: rgba(201,168,76,0.25); }
+  .visual .monogram {
+    font-family: Georgia, serif;
+    font-size: clamp(3rem, 10vw, 5.5rem);
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,168,76,0.4);
+    z-index: 1;
+  }
+
+  /* ---------- Section 3 : cards ---------- */
+  #details { background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-night) 100%); }
+  #details .halo-c {
+    width: 480px; height: 480px;
+    top: -120px; left: -120px;
+    background: radial-gradient(circle, rgba(201,168,76,0.12), transparent 70%);
+  }
+  #details h2 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    text-align: center;
+    margin-bottom: 3.5rem;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.6rem;
+  }
+  .card {
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 2.4rem 1.8rem;
+    background: rgba(255,255,255,0.015);
+    text-align: center;
+    transition: transform 0.4s ease, border-color 0.4s ease, background 0.4s ease;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.04);
+  }
+  .card .ico {
+    width: 54px; height: 54px;
+    margin: 0 auto 1.4rem;
+    color: var(--gold);
+  }
+  .card h3 { font-size: 1.4rem; margin-bottom: 0.8rem; }
+  .card p { font-size: 0.98rem; line-height: 1.7; }
+  .card .big {
+    font-family: Georgia, serif;
+    color: var(--gold);
+    font-size: 1.15rem;
+    display: block;
+    margin-top: 0.4rem;
+  }
+
+  /* ---------- Section 4 : footer ---------- */
+  #footer {
+    background: var(--bg-deep);
+    text-align: center;
+    min-height: 70svh;
+    justify-content: center;
+  }
+  #footer .halo-d {
+    width: 360px; height: 360px;
+    bottom: -120px; left: 50%; transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(201,168,76,0.14), transparent 70%);
+  }
+  #footer h2 { font-size: clamp(1.8rem, 4.5vw, 2.6rem); margin-bottom: 1.2rem; }
+  .footer-rsvp {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.9rem 2.4rem;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    color: var(--gold);
+    text-decoration: none;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+  .footer-rsvp:hover { background: var(--gold); color: var(--bg-deep); }
+  .footer-note {
+    margin-top: 3rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(200,200,224,0.4);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 768px) {
+    section { padding: 8vh 7vw; }
+    .split { grid-template-columns: 1fr; gap: 3rem; }
+    .visual { max-width: 320px; margin: 0 auto; }
+    .cards { grid-template-columns: 1fr; }
+    .scroll-cue { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- ===== Section 1 : Hero ===== -->
+<section id="hero">
+  <div class="halo halo-a" data-parallax="0.15" data-base="translateX(-50%)"></div>
+  <div class="content">
+    <p class="hero-kicker" data-parallax="0.45">Vous êtes convié</p>
+    <h1 data-parallax="0.25">Une soirée<br>sous les étoiles</h1>
+    <p class="hero-sub" data-parallax="0.35">Le plaisir d'une rencontre, la chaleur d'un moment partagé. Nous serions honorés de votre présence.</p>
+    <span class="hint">✦ Cliquez ou touchez l'écran</span>
+  </div>
+  <div class="scroll-cue"></div>
+</section>
+
+<!-- ===== Section 2 : Invitation / split ===== -->
+<section id="invite">
+  <div class="halo halo-b" data-parallax="0.3"></div>
+  <div class="content split">
+    <div>
+      <span class="label">L'invitation</span>
+      <h2>Le mot<br>de bienvenue</h2>
+      <p>C'est avec une grande joie que nous vous accueillons pour célébrer ensemble un instant d'exception. Une parenthèse hors du temps, pensée dans le moindre détail.</p>
+      <p>Laissez-vous porter par l'ambiance feutrée, la lumière dorée et la douceur d'une soirée que nous espérons inoubliable.</p>
+    </div>
+    <div class="visual" data-parallax="0.2">
+      <span class="monogram">P</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Section 3 : Détails / cards ===== -->
+<section id="details">
+  <div class="halo halo-c" data-parallax="0.25"></div>
+  <div class="content">
+    <h2 data-parallax="0.2">Les informations pratiques</h2>
+    <div class="cards">
+      <div class="card">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+        <h3>Quand</h3>
+        <p>Le moment venu<span class="big">Date &amp; horaire</span></p>
+      </div>
+      <div class="card">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        <h3>Où</h3>
+        <p>Un lieu choisi<span class="big">Adresse du lieu</span></p>
+      </div>
+      <div class="card">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 3h12l-1 7a5 5 0 0 1-10 0L6 3Z"/><path d="M12 15v4M8 21h8"/></svg>
+        <h3>Tenue</h3>
+        <p>Élégante de circonstance<span class="big">Dress code</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Section 4 : Footer ===== -->
+<section id="footer">
+  <div class="halo halo-d" data-parallax="0.3" data-base="translateX(-50%)"></div>
+  <div class="content">
+    <h2>Au plaisir de vous y retrouver</h2>
+    <p class="hero-sub" style="margin-bottom:0;">Merci de confirmer votre présence afin que tout soit parfait.</p>
+    <a class="footer-rsvp" href="mailto:?subject=Confirmation%20de%20pr%C3%A9sence">Confirmer ma présence</a>
+    <p class="footer-note">Avec toute notre considération</p>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     1. PARTICLE EMITTER (gold sparkles on click/touch-hold)
+     ============================================================ */
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+
+  // Custom cursor only on hover-capable / fine-pointer (desktop)
+  const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (hasHover) document.body.classList.add('custom-cursor');
+
+  let DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * DPR);
+    canvas.height = Math.floor(window.innerHeight * DPR);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // --- Base parameters (per brief) ---
+  const PARAMS = {
+    density: 5,      // particles emitted per interpolation point
+    size: 3,         // base particle radius
+    speed: 1.2,      // base velocity magnitude
+    decay: 0.005,    // life lost per frame
+    gravity: 0.04,   // vy accumulation per frame
+    wiggle: 2,       // lateral oscillation amplitude
+    halo: 0,         // glow radius (0 = off)
+    step: 4          // emit every 4px along the drag path
+  };
+
+  const COLORS = ['#ffd700','#ffed4a','#fff0a0','#f5c518','#ffe680','#ffc200','#fffbe6','#ffffff'];
+
+  const particles = [];
+
+  function spawn(x, y) {
+    for (let i = 0; i < PARAMS.density; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = PARAMS.speed * (0.4 + Math.random() * 1.1);
+      particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        r: PARAMS.size * (0.5 + Math.random()),
+        life: 1,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        // wiggle: random frequency + phase per particle
+        wFreq: 0.05 + Math.random() * 0.15,
+        wPhase: Math.random() * Math.PI * 2,
+        age: 0
+      });
+    }
+  }
+
+  // --- Pointer tracking with 4px interpolation along the path ---
+  let pressed = false;
+  let lastX = 0, lastY = 0;
+  let cursorX = -100, cursorY = -100, cursorVisible = false;
+
+  function emitTo(x, y) {
+    const dx = x - lastX;
+    const dy = y - lastY;
+    const dist = Math.hypot(dx, dy);
+    if (dist >= PARAMS.step) {
+      const steps = Math.floor(dist / PARAMS.step);
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        spawn(lastX + dx * t, lastY + dy * t);
+      }
+      lastX = x;
+      lastY = y;
+    }
+  }
+
+  // Mouse
+  canvas.parentElement.addEventListener('mousedown', function (e) {
+    pressed = true;
+    lastX = e.clientX; lastY = e.clientY;
+    spawn(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', function (e) {
+    cursorX = e.clientX; cursorY = e.clientY; cursorVisible = true;
+    if (pressed) emitTo(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', function () { pressed = false; });
+
+  // Touch
+  window.addEventListener('touchstart', function (e) {
+    pressed = true;
+    const t = e.touches[0];
+    lastX = t.clientX; lastY = t.clientY;
+    spawn(t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchmove', function (e) {
+    const t = e.touches[0];
+    emitTo(t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', function (e) {
+    pressed = false;
+    e.preventDefault();
+  }, { passive: false });
+
+  // --- Render loop ---
+  function render() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.age++;
+
+      // gravity accumulates on vy
+      p.vy += PARAMS.gravity;
+
+      // wiggle: sinusoidal lateral offset
+      const wiggleX = Math.sin(p.age * p.wFreq + p.wPhase) * PARAMS.wiggle * 0.1;
+
+      p.x += p.vx + wiggleX;
+      p.y += p.vy;
+      p.life -= PARAMS.decay;
+
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+        continue;
+      }
+
+      const radius = Math.max(0, p.r * p.life);
+      ctx.globalAlpha = p.life;
+
+      if (PARAMS.halo > 0) {
+        ctx.shadowBlur = PARAMS.halo;
+        ctx.shadowColor = p.color;
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // Custom gold cursor ring (desktop only)
+    if (hasHover && cursorVisible) {
+      ctx.beginPath();
+      ctx.arc(cursorX, cursorY, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(201,168,76,0.7)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+
+  /* ============================================================
+     2. PARALLAX ON SCROLL (vanilla, rAF + scrollY)
+     ============================================================ */
+  const parallaxEls = Array.prototype.slice.call(document.querySelectorAll('[data-parallax]'));
+  let ticking = false;
+
+  // Cache each element's untransformed document centre (avoids reading a
+  // transform-polluted rect every frame). Recomputed on resize.
+  function measure() {
+    const sy = window.scrollY || window.pageYOffset;
+    for (let i = 0; i < parallaxEls.length; i++) {
+      const el = parallaxEls[i];
+      const prev = el.style.transform;
+      el.style.transform = el.getAttribute('data-base') || '';
+      const rect = el.getBoundingClientRect();
+      el._docCentre = rect.top + sy + rect.height / 2;
+      el.style.transform = prev;
+    }
+  }
+
+  function applyParallax() {
+    const sy = window.scrollY || window.pageYOffset;
+    const viewCentre = sy + window.innerHeight / 2;
+    for (let i = 0; i < parallaxEls.length; i++) {
+      const el = parallaxEls[i];
+      const speed = parseFloat(el.getAttribute('data-parallax')) || 0;
+      const base = el.getAttribute('data-base') || '';
+      const shift = (el._docCentre - viewCentre) * speed;
+      el.style.transform = (base + ' translateY(' + shift.toFixed(2) + 'px)').trim();
+    }
+    ticking = false;
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      requestAnimationFrame(applyParallax);
+      ticking = true;
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () { measure(); applyParallax(); });
+  measure();
+  applyParallax();
+})();
+</script>
+</body>
+</html>
