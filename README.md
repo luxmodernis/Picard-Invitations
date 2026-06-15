@@ -4,12 +4,15 @@ Invitation immersive **Picard** : un voyage cinématique au scroll (ciel → for
 
 > **Arborescence d'assets** : wesendapps accepte une arborescence de fichiers ; les assets restent en local (`IMG/`, `fonts/`) plutôt qu'inlinés. La migration finale se fait en déplaçant le dossier complet.
 
-## Le parcours (4 scènes)
+## Le parcours (2 écrans)
 
-1. **Hero — ciel** : `Ciel.png` + `Nuages.png` en parallax, logo Picard, « vous invite », pastille « Scrollez pour commencer l'aventure » (`scroll.png`).
-2. **Forêt** : 3 calques de profondeur (`foret-3` fond / `foret-2` milieu / `foret-1` avant-plan) en parallax → « Un nouveau rendez-vous ».
-3. **Révélation (clic maintenu)** : l'orbe (`ORBES.png`) tourne en continu ; **maintenir le clic** charge une jauge — l'orbe grossit et la date « Rendez-vous sur la Bon'App, le 31 Août 2026, 11:11 » monte en taille + opacité. Relâché trop tôt → ça redescend. À 100 %, l'écran final se débloque.
-4. **Final** : « Le compte à rebours est lancé ! Soyez prêts ! » + bouton **Fermer** (rejoue depuis le début).
+Le mini-site = **deux écrans empilés** : le **ciel** (en haut) puis la **forêt** (en bas).
+
+1. **Écran 1 — ciel** : `Ciel.png` + `Nuages.png`, logo Picard, « vous invite », pastille « Scrollez pour commencer l'aventure » (`scroll.png`).
+2. **Arrivée** : on scrolle → **parallax** (le ciel s'éloigne, les 3 calques de forêt `foret-3/2/1` se posent à des vitesses différentes), puis **le décor se fige**.
+3. **Écran 2 — forêt + révélation** : l'orbe (`ORBES.png`) tourne en continu. **Clic maintenu** = jauge : l'orbe **grossit jusqu'à quasi sortir de l'écran** et les **3 textes défilent** — « Cliquez et maintenez » → « Rendez-vous sur la Bon'App, le 31 Août 2026, 11:11 » → « Le compte à rebours est lancé ! Soyez prêts ! ». Relâché trop tôt → la jauge redescend. À 100 %, le final se verrouille (bouton **Recommencer**). Tout se joue **dans la forêt**, sans écran séparé.
+
+Les fonds sont en `background-size: cover` **centré** (remplissent l'écran proprement, pas de tranche tronquée).
 
 ## Caractéristiques techniques
 

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#070b1e">
 <title>Picard vous invite</title>
 <style>
-  /* ---------- Custom display font (servie en local) ---------- */
+  /* ---------- Police display (servie en local) ---------- */
   @font-face {
     font-family: 'Wulkan Display';
     src: url('fonts/wulkan_display_regular/wulkan_display_regular-webfont.woff2') format('woff2'),
@@ -24,7 +24,6 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   html { scroll-behavior: smooth; }
 
   body {
@@ -33,19 +32,13 @@
     background: var(--bg-deep);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    /* Bloque la sélection / le drag : cliquer pour les paillettes ne doit
-       jamais attraper un texte ou une image */
+    /* Cliquer pour les paillettes ne doit jamais attraper texte / image */
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
   }
-
-  img {
-    -webkit-user-drag: none;
-    user-select: none;
-    pointer-events: none;
-  }
+  img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
 
   @media (hover: hover) and (pointer: fine) {
     body.custom-cursor { cursor: none; }
@@ -61,75 +54,55 @@
 
   /* ============ Particle canvas ============ */
   #particles {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 9999;
   }
 
-  /* ============ Pinned stages ============ */
-  /* Chaque "scène" a un runway (hauteur) + un stage sticky plein écran.
-     Les images de fond sont ANCRÉES SUR LA LARGEUR (background-size:100% auto)
-     puis PANÉES verticalement au scroll -> jamais rognées en hauteur. */
-  .scene { position: relative; }
-  .pin {
-    position: sticky;
-    top: 0;
+  /* Fonds plein écran : COVER centré -> remplit l'écran, cadrage propre */
+  .bg {
+    position: absolute; inset: 0;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  /* ============ Écran 1 : Ciel ============ */
+  #sky {
+    position: relative;
     height: 100svh;
     overflow: hidden;
+    background: #04060f;
   }
-  .bg {
-    position: absolute;
-    inset: 0;
-    background-repeat: no-repeat;
-    background-size: 100% auto;        /* largeur pleine, hauteur naturelle */
-    background-position: center top;
-    will-change: background-position;
-    pointer-events: none;
-  }
-  .pin-content {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    pointer-events: none;             /* clics -> particules, pas de capture */
-  }
-  .pin-content > * { grid-area: 1 / 1; }
-
-  /* ============ Scene 1 : Ciel ============ */
-  #sky { height: 180svh; background: #04060f; }
-  .ciel   { background-image: url('IMG/Ciel.png'); }
-  .nuages {
+  .sky-ciel   { background-image: url('IMG/Ciel.png'); }
+  .sky-nuages {
     background-image: url('IMG/Nuages.png');
-    background-position: center 64%;
+    background-position: center 38%;
     z-index: 2;
   }
-  /* Hero en colonne (le stack grid du .pin-content ne s'applique pas ici) */
   .sky-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    will-change: opacity;
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    pointer-events: none;
+    will-change: opacity, transform;
   }
-  .sky-content > * { grid-area: auto; }
   .logo {
-    width: clamp(90px, 13vw, 150px);
+    width: clamp(90px, 11vw, 150px);
     height: auto;
     filter: drop-shadow(0 0 28px rgba(201, 168, 76, 0.45));
-    margin-bottom: 2.4rem;
+    margin-bottom: 2.2rem;
   }
   .invite-line {
-    font-size: clamp(2rem, 6vw, 3.6rem);
+    font-size: clamp(2rem, 5.5vw, 3.6rem);
     letter-spacing: 0.04em;
-    margin-bottom: 3.4rem;
+    margin-bottom: 3.2rem;
   }
   .scroll-badge {
-    width: clamp(130px, 16vw, 188px);
+    width: clamp(130px, 14vw, 185px);
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
   }
@@ -138,33 +111,38 @@
     50% { transform: translateY(10px); opacity: 1; }
   }
 
-  /* ============ Scene 2+3 : Forêt + révélation ============ */
-  #forest { height: 340svh; background: #04060f; }
+  /* ============ Écran 2 : Forêt (arrivée parallax -> figée) ============ */
+  #forest {
+    position: relative;
+    height: 200svh;            /* runway : arrivée parallax puis pin statique */
+    background: #04060f;
+  }
+  .forest-pin {
+    position: sticky; top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
   .f3 { background-image: url('IMG/foret-3.png'); }
   .f2 { background-image: url('IMG/foret-2.png'); z-index: 2; }
   .f1 { background-image: url('IMG/foret-1.png'); z-index: 3; }
 
-  .beat-nouveau {
-    font-size: clamp(2rem, 6vw, 3.8rem);
-    transform: translateY(-30vh);
-    will-change: opacity;
+  .stage {
+    position: absolute; inset: 0; z-index: 5;
+    display: grid; place-items: center;
+    text-align: center;
+    pointer-events: none;
   }
+  .stage > * { grid-area: 1 / 1; }
+
   .orbe-wrap {
-    position: relative;
-    width: clamp(280px, 60vw, 600px);
+    width: clamp(260px, 52vw, 560px);
     aspect-ratio: 1 / 1;
-    display: grid;
-    place-items: center;
-  }
-  .orbe-scale {
-    grid-area: 1 / 1;
-    width: 100%; height: 100%;
     display: grid; place-items: center;
     will-change: transform, opacity;
   }
   .orbe-spin {
     width: 100%; height: 100%;
-    animation: spin 26s linear infinite;   /* sens inversé via keyframes */
+    animation: spin 26s linear infinite;   /* sens inversé */
   }
   .orbe-spin img {
     width: 100%; height: 100%;
@@ -173,141 +151,83 @@
   }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
-  .reveal-prompt, .reveal-date {
+  /* Les 3 textes : même centre, cross-fade + léger défilement vertical */
+  .txt {
     grid-area: 1 / 1;
-    z-index: 2;
+    z-index: 3;
     font-family: 'Wulkan Display', Georgia, serif;
     color: var(--gold-soft);
-    text-shadow: 0 0 26px rgba(201, 168, 76, 0.5);
-  }
-  .reveal-prompt {
-    font-size: clamp(1.5rem, 4.2vw, 2.6rem);
-    line-height: 1.25;
-    will-change: opacity;
-  }
-  .reveal-date {
-    font-size: clamp(1.25rem, 3.4vw, 2.1rem);
-    line-height: 1.4;
+    text-shadow: 0 0 26px rgba(201, 168, 76, 0.55);
+    line-height: 1.3;
     opacity: 0;
     will-change: opacity, transform;
   }
-  .reveal-date .hour {
-    display: inline-block;
-    margin-top: 0.5rem;
-    font-size: 1.35em;
-    letter-spacing: 0.08em;
-  }
-
-  /* ============ Scene 4 : Final ============ */
-  #final {
-    position: relative;
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #04060f;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 1.2s ease;
-  }
-  #final.show { opacity: 1; visibility: visible; }
-  .final-bg {
-    position: absolute; inset: 0;
-    background: url('IMG/foret-3.png') no-repeat center bottom;
-    background-size: 100% auto;
-    opacity: 0.6;
-    filter: brightness(0.55) saturate(1.1) blur(2px);
-    transform: scale(1.08);
-    pointer-events: none;
-  }
-  .final-orbe {
-    position: absolute;
-    z-index: 1;
-    width: clamp(320px, 70vw, 720px);
-    aspect-ratio: 1 / 1;
-    object-fit: contain;
-    opacity: 0.22;
-    filter: drop-shadow(0 0 40px rgba(230, 200, 121, 0.4));
-    animation: spin 40s linear infinite;
-    pointer-events: none;
-  }
-  .final-veil {
-    position: absolute; inset: 0; z-index: 2;
-    background: radial-gradient(circle at 50% 45%, rgba(8,12,30,0.15), rgba(4,6,15,0.7) 78%);
-    pointer-events: none;
-  }
-  .final-content { position: relative; z-index: 3; text-align: center; padding: 0 8vw; }
-  .final-small {
-    font-family: 'Wulkan Display', Georgia, serif;
+  .txt-prompt { font-size: clamp(1.5rem, 4vw, 2.6rem); }
+  .txt-date   { font-size: clamp(1.25rem, 3.2vw, 2.05rem); }
+  .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.35em; letter-spacing: 0.08em; }
+  .txt-final .small {
+    display: block;
+    font-size: clamp(1rem, 2.6vw, 1.5rem);
     color: var(--gold-soft);
-    font-size: clamp(1.1rem, 3vw, 1.7rem);
-    margin-bottom: 1.2rem;
-    letter-spacing: 0.02em;
+    margin-bottom: 0.9rem;
   }
-  .final-big { font-size: clamp(2.6rem, 9vw, 5.5rem); margin-bottom: 3rem; }
-  .fermer {
+  .txt-final .big {
+    display: block;
     font-family: 'Wulkan Display', Georgia, serif;
-    background: transparent;
     color: var(--gold);
-    border: 1px solid var(--gold);
-    border-radius: 999px;
-    padding: 0.8rem 2.6rem;
-    font-size: 1rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    cursor: pointer;
-    pointer-events: auto;
-    transition: background 0.35s ease, color 0.35s ease;
+    font-size: clamp(2.4rem, 7vw, 4.6rem);
+    text-shadow: 0 0 40px rgba(201,168,76,0.4);
   }
-  .fermer:hover { background: var(--gold); color: var(--bg-deep); }
+  .replay {
+    position: absolute;
+    left: 50%; bottom: 7vh; transform: translateX(-50%);
+    z-index: 6;
+    font-family: 'Wulkan Display', Georgia, serif;
+    background: transparent; color: var(--gold);
+    border: 1px solid var(--gold); border-radius: 999px;
+    padding: 0.7rem 2.2rem;
+    font-size: 0.9rem; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; pointer-events: auto;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.8s ease, background 0.35s ease, color 0.35s ease;
+  }
+  .replay.show { opacity: 1; visibility: visible; }
+  .replay:hover { background: var(--gold); color: var(--bg-deep); }
 </style>
 </head>
 <body>
 
 <canvas id="particles"></canvas>
 
-<!-- ===== Scene 1 : Ciel ===== -->
-<section id="sky" class="scene">
-  <div class="pin">
-    <div class="bg ciel"></div>
-    <div class="bg nuages"></div>
-    <div class="pin-content sky-content">
-      <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
-      <h1 class="invite-line">vous invite</h1>
-      <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
-    </div>
+<!-- ===== Écran 1 : Ciel ===== -->
+<section id="sky">
+  <div class="bg sky-ciel"></div>
+  <div class="bg sky-nuages"></div>
+  <div class="sky-content">
+    <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
+    <h1 class="invite-line">vous invite</h1>
+    <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
   </div>
 </section>
 
-<!-- ===== Scene 2+3 : Forêt + révélation ===== -->
-<section id="forest" class="scene">
-  <div class="pin">
+<!-- ===== Écran 2 : Forêt + révélation ===== -->
+<section id="forest">
+  <div class="forest-pin">
     <div class="bg f3"></div>
     <div class="bg f2"></div>
     <div class="bg f1"></div>
-    <div class="pin-content forest-content">
-      <h2 class="beat-nouveau">Un nouveau<br>rendez-vous</h2>
+    <div class="stage">
       <div class="orbe-wrap">
-        <div class="orbe-scale">
-          <div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div>
-        </div>
-        <p class="reveal-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
-        <p class="reveal-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
+        <div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div>
       </div>
+      <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
+      <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
+      <p class="txt txt-final">
+        <span class="small">Le compte à rebours est lancé !</span>
+        <span class="big">Soyez prêts !</span>
+      </p>
     </div>
-  </div>
-</section>
-
-<!-- ===== Scene 4 : Final ===== -->
-<section id="final">
-  <div class="final-bg"></div>
-  <img class="final-orbe" src="IMG/ORBES.png" alt="" draggable="false">
-  <div class="final-veil"></div>
-  <div class="final-content">
-    <p class="final-small">Le compte à rebours est lancé !</p>
-    <h2 class="final-big">Soyez<br>prêts !</h2>
-    <button class="fermer" type="button">Fermer</button>
+    <button class="replay" type="button">Recommencer</button>
   </div>
 </section>
 
@@ -316,7 +236,7 @@
   "use strict";
 
   /* ============================================================
-     1. PARTICLE EMITTER (gold sparkles on click / touch-hold)
+     1. PARTICLE EMITTER
      ============================================================ */
   const canvas = document.getElementById('particles');
   const ctx = canvas.getContext('2d');
@@ -335,10 +255,7 @@
   }
   resizeCanvas();
 
-  const PARAMS = {
-    density: 5, size: 3, speed: 1.2, decay: 0.005,
-    gravity: 0.04, wiggle: 2, halo: 0, step: 4
-  };
+  const PARAMS = { density: 5, size: 3, speed: 1.2, decay: 0.005, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
   const COLORS = ['#ffd700','#ffed4a','#fff0a0','#f5c518','#ffe680','#ffc200','#fffbe6','#ffffff'];
   const particles = [];
 
@@ -347,10 +264,9 @@
       const angle = Math.random() * Math.PI * 2;
       const spd = PARAMS.speed * (0.4 + Math.random() * 1.1);
       particles.push({
-        x: x, y: y,
-        vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-        r: PARAMS.size * (0.5 + Math.random()),
-        life: 1, color: COLORS[(Math.random() * COLORS.length) | 0],
+        x: x, y: y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+        r: PARAMS.size * (0.5 + Math.random()), life: 1,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
         wFreq: 0.05 + Math.random() * 0.15, wPhase: Math.random() * Math.PI * 2, age: 0
       });
     }
@@ -365,14 +281,10 @@
     const dist = Math.hypot(dx, dy);
     if (dist >= PARAMS.step) {
       const steps = Math.floor(dist / PARAMS.step);
-      for (let i = 1; i <= steps; i++) {
-        const t = i / steps;
-        spawn(lastX + dx * t, lastY + dy * t);
-      }
+      for (let i = 1; i <= steps; i++) { const t = i / steps; spawn(lastX + dx * t, lastY + dy * t); }
       lastX = x; lastY = y;
     }
   }
-
   function pressStart(x, y) { pressed = true; lastX = x; lastY = y; spawn(x, y); }
   function pressEnd() { pressed = false; }
 
@@ -383,15 +295,12 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // Touch — preventDefault uniquement pendant la révélation (sinon on bloque le scroll)
   window.addEventListener('touchstart', function (e) {
-    const t = e.touches[0];
-    pressStart(t.clientX, t.clientY);
+    const t = e.touches[0]; pressStart(t.clientX, t.clientY);
     if (revealActive) e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchmove', function (e) {
-    const t = e.touches[0];
-    emitTo(t.clientX, t.clientY);
+    const t = e.touches[0]; emitTo(t.clientX, t.clientY);
     if (revealActive) e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchend', function (e) {
@@ -401,22 +310,17 @@
 
 
   /* ============================================================
-     2. SCROLL : descente (pan ancré largeur) + beats
+     2. SCROLL : parallax d'arrivée puis décor figé
      ============================================================ */
-  const sky        = document.getElementById('sky');
-  const cielBg     = document.querySelector('.ciel');
-  const nuagesBg   = document.querySelector('.nuages');
+  const skyCiel    = document.querySelector('.sky-ciel');
+  const skyNuages  = document.querySelector('.sky-nuages');
   const skyContent = document.querySelector('.sky-content');
-
   const forest     = document.getElementById('forest');
   const f1 = document.querySelector('.f1');
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
-  const beatNouveau= document.querySelector('.beat-nouveau');
-  const promptEl   = document.querySelector('.reveal-prompt');
-  const orbeScale  = document.querySelector('.orbe-scale');
 
-  let forestProgress = 0;
+  let forestProgress = 0;   // 0 = on entre, 1 = forêt figée (bas de page)
   let revealActive = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -428,23 +332,21 @@
     const sy = window.scrollY || window.pageYOffset;
     const vh = window.innerHeight;
 
-    // ---- Ciel : pan vertical (haut étoilé -> bas nuit) ----
-    const skyRun = sky.offsetHeight - vh;
-    const skyProgress = clamp((sy - sky.offsetTop) / (skyRun || 1), 0, 1);
-    cielBg.style.backgroundPositionY   = (skyProgress * 82).toFixed(2) + '%';
-    nuagesBg.style.backgroundPositionY = (64 + skyProgress * 30).toFixed(2) + '%';
-    // Le logo / l'invitation s'effacent au fur et à mesure de la descente
-    skyContent.style.opacity = clamp(1 - skyProgress * 1.5, 0, 1).toFixed(3);
+    // Ciel : léger parallax (l'écran du haut s'éloigne plus lentement)
+    skyCiel.style.transform   = 'translateY(' + (sy * 0.35).toFixed(1) + 'px) scale(1.05)';
+    skyNuages.style.transform = 'translateY(' + (sy * 0.55).toFixed(1) + 'px)';
+    skyContent.style.transform = 'translateY(' + (sy * 0.25).toFixed(1) + 'px)';
+    skyContent.style.opacity = clamp(1 - sy / (vh * 0.7), 0, 1).toFixed(3);
 
-    // ---- Forêt : pan + profondeur ----
+    // Forêt : arrivée en parallax (calques montent à des vitesses différentes)
+    // jusqu'à forestProgress ~0.5, puis FIGÉE.
     const forRun = forest.offsetHeight - vh;
     forestProgress = clamp((sy - forest.offsetTop) / (forRun || 1), 0, 1);
-    // Calques panés à vitesses différentes -> profondeur, sans rognage largeur
-    f3.style.backgroundPositionY = (forestProgress * 55).toFixed(2) + '%';
-    f2.style.backgroundPositionY = (forestProgress * 75).toFixed(2) + '%';
-    f1.style.backgroundPositionY = (forestProgress * 95).toFixed(2) + '%';
-
-    beatNouveau.style.opacity = clamp(1 - forestProgress * 2.4, 0, 1).toFixed(3);
+    const enter = clamp(forestProgress / 0.5, 0, 1);     // 0 -> 1 sur la 1re moitié
+    const settle = 1 - enter;                            // 1 -> 0
+    f3.style.transform = 'translateY(' + (settle * vh * 0.10).toFixed(1) + 'px) scale(1.04)';
+    f2.style.transform = 'translateY(' + (settle * vh * 0.22).toFixed(1) + 'px) scale(1.04)';
+    f1.style.transform = 'translateY(' + (settle * vh * 0.38).toFixed(1) + 'px) scale(1.04)';
 
     ticking = false;
   }
@@ -453,25 +355,28 @@
 
 
   /* ============================================================
-     3. RÉVÉLATION : hold-to-charge
+     3. RÉVÉLATION : clic maintenu -> orbe grossit, 3 textes défilent
      ============================================================ */
-  const dateEl  = document.querySelector('.reveal-date');
-  const finalEl = document.getElementById('final');
-  const fermer  = document.querySelector('.fermer');
+  const orbeWrap  = document.querySelector('.orbe-wrap');
+  const txtPrompt = document.querySelector('.txt-prompt');
+  const txtDate   = document.querySelector('.txt-date');
+  const txtFinal  = document.querySelector('.txt-final');
+  const replay    = document.querySelector('.replay');
 
-  let charge = 0;
+  let charge = 0;          // 0..1
   let completed = false;
-  const CHARGE_UP = 0.011;
-  const CHARGE_DOWN = 0.022;
+  const CHARGE_UP = 0.009;   // ~1.85 s pour remplir
+  const CHARGE_DOWN = 0.02;
 
-  fermer.addEventListener('click', function () {
-    completed = false;
-    charge = 0;
-    finalEl.classList.remove('show');
+  replay.addEventListener('click', function () {
+    completed = false; charge = 0;
+    replay.classList.remove('show');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   function reveal() {
+    // Forêt « arrivée » : l'orbe apparaît quand le décor se pose
+    const climax = clamp((forestProgress - 0.32) / 0.18, 0, 1);
     revealActive = forestProgress > 0.5 && !completed;
 
     if (revealActive && pressed) {
@@ -480,21 +385,35 @@
       charge = clamp(charge - CHARGE_DOWN, 0, 1);
     }
 
-    const climax = clamp((forestProgress - 0.32) / 0.22, 0, 1);
+    // Orbe : visible à l'arrivée, GROSSIT fortement avec la charge (~ sort de l'écran)
+    orbeWrap.style.opacity = (0.30 + climax * 0.70).toFixed(3);
+    orbeWrap.style.transform = 'scale(' + (0.82 + climax * 0.10 + charge * 1.7).toFixed(3) + ')';
 
-    orbeScale.style.transform = 'scale(' + (0.78 + climax * 0.12 + charge * 0.4).toFixed(3) + ')';
-    orbeScale.style.opacity = (0.28 + climax * 0.72).toFixed(3);
-    promptEl.style.opacity = (climax * (1 - charge)).toFixed(3);
-    dateEl.style.opacity = charge.toFixed(3);
-    dateEl.style.transform = 'scale(' + (0.55 + charge * 0.45).toFixed(3) + ')';
+    if (!completed) {
+      // 1) prompt -> 2) date : défilement vertical + cross-fade piloté par la charge
+      const pOut = clamp(charge / 0.22, 0, 1);            // prompt s'efface
+      txtPrompt.style.opacity = (climax * (1 - pOut)).toFixed(3);
+      txtPrompt.style.transform = 'translateY(' + (pOut * -28).toFixed(1) + 'px)';
+
+      const dIn = clamp((charge - 0.18) / 0.5, 0, 1);     // date entre
+      txtDate.style.opacity = dIn.toFixed(3);
+      txtDate.style.transform = 'translateY(' + ((1 - dIn) * 28).toFixed(1) + 'px) scale(' + (0.8 + dIn * 0.2).toFixed(3) + ')';
+
+      txtFinal.style.opacity = '0';
+    }
 
     if (charge >= 1 && !completed) {
       completed = true;
       revealActive = false;
-      setTimeout(function () {
-        finalEl.classList.add('show');
-        finalEl.scrollIntoView({ behavior: 'smooth' });
-      }, 650);
+      // 3) message final, dans la forêt
+      txtPrompt.style.opacity = '0';
+      txtDate.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      txtDate.style.opacity = '0';
+      txtDate.style.transform = 'translateY(-28px) scale(1.05)';
+      txtFinal.style.transition = 'opacity 1s ease 0.35s, transform 1s ease 0.35s';
+      txtFinal.style.opacity = '1';
+      txtFinal.style.transform = 'translateY(0)';
+      replay.classList.add('show');
     }
   }
 
@@ -510,28 +429,22 @@
       p.age++;
       p.vy += PARAMS.gravity;
       const wiggleX = Math.sin(p.age * p.wFreq + p.wPhase) * PARAMS.wiggle * 0.1;
-      p.x += p.vx + wiggleX;
-      p.y += p.vy;
-      p.life -= PARAMS.decay;
+      p.x += p.vx + wiggleX; p.y += p.vy; p.life -= PARAMS.decay;
       if (p.life <= 0) { particles.splice(i, 1); continue; }
-
       const radius = Math.max(0, p.r * p.life);
       ctx.globalAlpha = p.life;
       if (PARAMS.halo > 0) { ctx.shadowBlur = PARAMS.halo; ctx.shadowColor = p.color; }
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.fill();
+      ctx.fillStyle = p.color; ctx.fill();
     }
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 
     if (hasHover && cursorVisible) {
       ctx.beginPath();
       ctx.arc(cursorX, cursorY, 5, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(201,168,76,0.7)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      ctx.lineWidth = 1; ctx.stroke();
     }
 
     reveal();
