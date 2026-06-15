@@ -17,8 +17,7 @@
   }
 
   :root {
-    --bg-night: #0a0e2a;
-    --bg-deep: #070b1e;
+    --bg-deep: #04060f;
     --gold: #c9a84c;
     --gold-soft: #e6c879;
     --body: #c8c8e0;
@@ -34,6 +33,18 @@
     background: var(--bg-deep);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    /* Bloque la sélection / le drag : cliquer pour les paillettes ne doit
+       jamais attraper un texte ou une image */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -58,56 +69,67 @@
     z-index: 9999;
   }
 
-  /* ============ Generic layers ============ */
-  .scene {
-    position: relative;
-    min-height: 100svh;
+  /* ============ Pinned stages ============ */
+  /* Chaque "scène" a un runway (hauteur) + un stage sticky plein écran.
+     Les images de fond sont ANCRÉES SUR LA LARGEUR (background-size:100% auto)
+     puis PANÉES verticalement au scroll -> jamais rognées en hauteur. */
+  .scene { position: relative; }
+  .pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
-  .layer {
+  .bg {
     position: absolute;
-    inset: -6%;
-    background-size: cover;
-    background-position: center;
+    inset: 0;
     background-repeat: no-repeat;
-    will-change: transform;
+    background-size: 100% auto;        /* largeur pleine, hauteur naturelle */
+    background-position: center top;
+    will-change: background-position;
     pointer-events: none;
   }
-
-  /* ============ Scene 1 : Hero (ciel) ============ */
-  #hero { background: #060a1c; }
-  .bg-ciel   { background-image: url('IMG/Ciel.png'); }
-  .bg-nuages {
-    background-image: url('IMG/Nuages.png');
-    background-position: center bottom;
-    inset: auto -6% -6% -6%;
-    height: 80%;
-  }
-  .hero-content {
-    position: relative;
-    z-index: 3;
+  .pin-content {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
     text-align: center;
+    pointer-events: none;             /* clics -> particules, pas de capture */
+  }
+  .pin-content > * { grid-area: 1 / 1; }
+
+  /* ============ Scene 1 : Ciel ============ */
+  #sky { height: 180svh; background: #04060f; }
+  .ciel   { background-image: url('IMG/Ciel.png'); }
+  .nuages {
+    background-image: url('IMG/Nuages.png');
+    background-position: center 64%;
+    z-index: 2;
+  }
+  /* Hero en colonne (le stack grid du .pin-content ne s'applique pas ici) */
+  .sky-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 8vw;
+    justify-content: center;
+    will-change: opacity;
   }
+  .sky-content > * { grid-area: auto; }
   .logo {
-    width: clamp(90px, 14vw, 150px);
+    width: clamp(90px, 13vw, 150px);
     height: auto;
     filter: drop-shadow(0 0 28px rgba(201, 168, 76, 0.45));
-    margin-bottom: 1.6rem;
+    margin-bottom: 2.4rem;
   }
   .invite-line {
     font-size: clamp(2rem, 6vw, 3.6rem);
     letter-spacing: 0.04em;
-    margin-bottom: 3.5rem;
+    margin-bottom: 3.4rem;
   }
   .scroll-badge {
-    width: clamp(130px, 17vw, 190px);
+    width: clamp(130px, 16vw, 188px);
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
   }
@@ -117,49 +139,19 @@
   }
 
   /* ============ Scene 2+3 : Forêt + révélation ============ */
-  /* Tall section, sticky stage pinned while scrolling -> depth + reveal */
-  #stage {
-    position: relative;
-    height: 280svh;          /* scroll runway for the beats */
-    background: #04060f;
-  }
-  .stage-sticky {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .foret { position: absolute; inset: -8%; background-size: cover; background-position: center bottom; will-change: transform; pointer-events: none; }
+  #forest { height: 340svh; background: #04060f; }
   .f3 { background-image: url('IMG/foret-3.png'); }
-  .f2 { background-image: url('IMG/foret-2.png'); }
-  .f1 { background-image: url('IMG/foret-1.png'); }
-
-  .stage-content {
-    position: relative;
-    z-index: 4;
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  /* All beats share the same optical centre */
-  .stage-content > * { grid-area: 1 / 1; }
+  .f2 { background-image: url('IMG/foret-2.png'); z-index: 2; }
+  .f1 { background-image: url('IMG/foret-1.png'); z-index: 3; }
 
   .beat-nouveau {
     font-size: clamp(2rem, 6vw, 3.8rem);
     transform: translateY(-30vh);
     will-change: opacity;
   }
-
   .orbe-wrap {
     position: relative;
-    width: clamp(280px, 62vw, 620px);
+    width: clamp(280px, 60vw, 600px);
     aspect-ratio: 1 / 1;
     display: grid;
     place-items: center;
@@ -172,23 +164,21 @@
   }
   .orbe-spin {
     width: 100%; height: 100%;
-    animation: spin 26s linear infinite;
+    animation: spin 26s linear infinite;   /* sens inversé via keyframes */
   }
   .orbe-spin img {
     width: 100%; height: 100%;
     object-fit: contain;
     filter: drop-shadow(0 0 30px rgba(230, 200, 121, 0.35));
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
-  /* Prompt + date occupy the orbe centre, cross-fade via JS */
   .reveal-prompt, .reveal-date {
     grid-area: 1 / 1;
     z-index: 2;
     font-family: 'Wulkan Display', Georgia, serif;
     color: var(--gold-soft);
     text-shadow: 0 0 26px rgba(201, 168, 76, 0.5);
-    pointer-events: none;
   }
   .reveal-prompt {
     font-size: clamp(1.5rem, 4.2vw, 2.6rem);
@@ -210,6 +200,12 @@
 
   /* ============ Scene 4 : Final ============ */
   #final {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
     background: #04060f;
     opacity: 0;
     visibility: hidden;
@@ -217,11 +213,13 @@
   }
   #final.show { opacity: 1; visibility: visible; }
   .final-bg {
-    background-image: url('IMG/foret-3.png');
-    background-position: center bottom;
+    position: absolute; inset: 0;
+    background: url('IMG/foret-3.png') no-repeat center bottom;
+    background-size: 100% auto;
     opacity: 0.6;
     filter: brightness(0.55) saturate(1.1) blur(2px);
     transform: scale(1.08);
+    pointer-events: none;
   }
   .final-orbe {
     position: absolute;
@@ -239,12 +237,7 @@
     background: radial-gradient(circle at 50% 45%, rgba(8,12,30,0.15), rgba(4,6,15,0.7) 78%);
     pointer-events: none;
   }
-  .final-content {
-    position: relative;
-    z-index: 3;
-    text-align: center;
-    padding: 0 8vw;
-  }
+  .final-content { position: relative; z-index: 3; text-align: center; padding: 0 8vw; }
   .final-small {
     font-family: 'Wulkan Display', Georgia, serif;
     color: var(--gold-soft);
@@ -252,10 +245,7 @@
     margin-bottom: 1.2rem;
     letter-spacing: 0.02em;
   }
-  .final-big {
-    font-size: clamp(2.6rem, 9vw, 5.5rem);
-    margin-bottom: 3rem;
-  }
+  .final-big { font-size: clamp(2.6rem, 9vw, 5.5rem); margin-bottom: 3rem; }
   .fermer {
     font-family: 'Wulkan Display', Georgia, serif;
     background: transparent;
@@ -267,41 +257,40 @@
     letter-spacing: 0.22em;
     text-transform: uppercase;
     cursor: pointer;
+    pointer-events: auto;
     transition: background 0.35s ease, color 0.35s ease;
   }
   .fermer:hover { background: var(--gold); color: var(--bg-deep); }
-
-  @media (max-width: 768px) {
-    #stage { height: 260svh; }
-  }
 </style>
 </head>
 <body>
 
 <canvas id="particles"></canvas>
 
-<!-- ===== Scene 1 : Hero (ciel) ===== -->
-<section id="hero" class="scene">
-  <div class="layer bg-ciel"   data-px="0.18"></div>
-  <div class="layer bg-nuages" data-px="0.42"></div>
-  <div class="hero-content">
-    <img class="logo" src="IMG/logo_Picard.png" alt="Picard">
-    <h1 class="invite-line">vous invite</h1>
-    <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure">
+<!-- ===== Scene 1 : Ciel ===== -->
+<section id="sky" class="scene">
+  <div class="pin">
+    <div class="bg ciel"></div>
+    <div class="bg nuages"></div>
+    <div class="pin-content sky-content">
+      <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
+      <h1 class="invite-line">vous invite</h1>
+      <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
+    </div>
   </div>
 </section>
 
 <!-- ===== Scene 2+3 : Forêt + révélation ===== -->
-<section id="stage">
-  <div class="stage-sticky">
-    <div class="foret f3" data-depth="0.04"></div>
-    <div class="foret f2" data-depth="0.10"></div>
-    <div class="foret f1" data-depth="0.18"></div>
-    <div class="stage-content">
+<section id="forest" class="scene">
+  <div class="pin">
+    <div class="bg f3"></div>
+    <div class="bg f2"></div>
+    <div class="bg f1"></div>
+    <div class="pin-content forest-content">
       <h2 class="beat-nouveau">Un nouveau<br>rendez-vous</h2>
       <div class="orbe-wrap">
         <div class="orbe-scale">
-          <div class="orbe-spin"><img src="IMG/ORBES.png" alt=""></div>
+          <div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div>
         </div>
         <p class="reveal-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
         <p class="reveal-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
@@ -311,9 +300,9 @@
 </section>
 
 <!-- ===== Scene 4 : Final ===== -->
-<section id="final" class="scene">
-  <div class="layer final-bg"></div>
-  <img class="final-orbe" src="IMG/ORBES.png" alt="">
+<section id="final">
+  <div class="final-bg"></div>
+  <img class="final-orbe" src="IMG/ORBES.png" alt="" draggable="false">
   <div class="final-veil"></div>
   <div class="final-content">
     <p class="final-small">Le compte à rebours est lancé !</p>
@@ -394,7 +383,7 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // Touch — preventDefault only while the reveal stage is active (else we'd block scroll)
+  // Touch — preventDefault uniquement pendant la révélation (sinon on bloque le scroll)
   window.addEventListener('touchstart', function (e) {
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
@@ -412,52 +401,50 @@
 
 
   /* ============================================================
-     2. SCROLL : parallax hero + forêt + beats
+     2. SCROLL : descente (pan ancré largeur) + beats
      ============================================================ */
-  const ciel    = document.querySelector('.bg-ciel');
-  const nuages  = document.querySelector('.bg-nuages');
-  const heroPx  = [ciel, nuages];
+  const sky        = document.getElementById('sky');
+  const cielBg     = document.querySelector('.ciel');
+  const nuagesBg   = document.querySelector('.nuages');
+  const skyContent = document.querySelector('.sky-content');
 
-  const stage      = document.getElementById('stage');
-  const foretLayers= Array.prototype.slice.call(document.querySelectorAll('.foret[data-depth]'));
+  const forest     = document.getElementById('forest');
+  const f1 = document.querySelector('.f1');
+  const f2 = document.querySelector('.f2');
+  const f3 = document.querySelector('.f3');
   const beatNouveau= document.querySelector('.beat-nouveau');
   const promptEl   = document.querySelector('.reveal-prompt');
   const orbeScale  = document.querySelector('.orbe-scale');
 
-  let stageProgress = 0;   // 0..1 progress through the sticky runway
+  let forestProgress = 0;
   let revealActive = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
   let ticking = false;
-  function onScroll() {
-    if (!ticking) { requestAnimationFrame(updateScroll); ticking = true; }
-  }
+  function onScroll() { if (!ticking) { requestAnimationFrame(updateScroll); ticking = true; } }
+
   function updateScroll() {
     const sy = window.scrollY || window.pageYOffset;
     const vh = window.innerHeight;
 
-    // Hero parallax (simple, anchored at top of doc)
-    for (let i = 0; i < heroPx.length; i++) {
-      const el = heroPx[i];
-      const sp = parseFloat(el.getAttribute('data-px')) || 0;
-      el.style.transform = 'translateY(' + (sy * sp).toFixed(1) + 'px)';
-    }
+    // ---- Ciel : pan vertical (haut étoilé -> bas nuit) ----
+    const skyRun = sky.offsetHeight - vh;
+    const skyProgress = clamp((sy - sky.offsetTop) / (skyRun || 1), 0, 1);
+    cielBg.style.backgroundPositionY   = (skyProgress * 82).toFixed(2) + '%';
+    nuagesBg.style.backgroundPositionY = (64 + skyProgress * 30).toFixed(2) + '%';
+    // Le logo / l'invitation s'effacent au fur et à mesure de la descente
+    skyContent.style.opacity = clamp(1 - skyProgress * 1.5, 0, 1).toFixed(3);
 
-    // Stage progress (sticky runway)
-    const top = stage.offsetTop;
-    const runway = stage.offsetHeight - vh;
-    stageProgress = clamp((sy - top) / (runway || 1), 0, 1);
+    // ---- Forêt : pan + profondeur ----
+    const forRun = forest.offsetHeight - vh;
+    forestProgress = clamp((sy - forest.offsetTop) / (forRun || 1), 0, 1);
+    // Calques panés à vitesses différentes -> profondeur, sans rognage largeur
+    f3.style.backgroundPositionY = (forestProgress * 55).toFixed(2) + '%';
+    f2.style.backgroundPositionY = (forestProgress * 75).toFixed(2) + '%';
+    f1.style.backgroundPositionY = (forestProgress * 95).toFixed(2) + '%';
 
-    // Forest depth parallax (driven by progress so it reads while pinned)
-    for (let i = 0; i < foretLayers.length; i++) {
-      const el = foretLayers[i];
-      const d = parseFloat(el.getAttribute('data-depth')) || 0;
-      el.style.transform = 'translateY(' + (stageProgress * vh * -d).toFixed(1) + 'px) scale(' + (1 + d * 0.4) + ')';
-    }
-
-    // Beat 1 ("Un nouveau rendez-vous") fades out as we move into the climax
-    beatNouveau.style.opacity = clamp(1 - stageProgress * 2.4, 0, 1);
+    beatNouveau.style.opacity = clamp(1 - forestProgress * 2.4, 0, 1).toFixed(3);
 
     ticking = false;
   }
@@ -472,13 +459,12 @@
   const finalEl = document.getElementById('final');
   const fermer  = document.querySelector('.fermer');
 
-  let charge = 0;          // 0..1
+  let charge = 0;
   let completed = false;
-  const CHARGE_UP = 0.011; // ~1.5s to fill
+  const CHARGE_UP = 0.011;
   const CHARGE_DOWN = 0.022;
 
   fermer.addEventListener('click', function () {
-    // Replay : reset and go back to the top
     completed = false;
     charge = 0;
     finalEl.classList.remove('show');
@@ -486,14 +472,7 @@
   });
 
   function reveal() {
-    if (completed) {
-      finalEl.classList.add('show');
-      finalEl.style.pointerEvents = 'auto';
-    } else {
-      finalEl.style.pointerEvents = 'none';
-    }
-    // Climax is "active" once the stage is well into its runway
-    revealActive = stageProgress > 0.55 && !completed;
+    revealActive = forestProgress > 0.5 && !completed;
 
     if (revealActive && pressed) {
       charge = clamp(charge + CHARGE_UP, 0, 1);
@@ -501,27 +480,19 @@
       charge = clamp(charge - CHARGE_DOWN, 0, 1);
     }
 
-    // Climax visibility (orbe prominent + prompt visible) ramps in late
-    const climax = clamp((stageProgress - 0.4) / 0.25, 0, 1);
+    const climax = clamp((forestProgress - 0.32) / 0.22, 0, 1);
 
-    // Orbe forms with the climax (faint -> full), then grows with charge
     orbeScale.style.transform = 'scale(' + (0.78 + climax * 0.12 + charge * 0.4).toFixed(3) + ')';
     orbeScale.style.opacity = (0.28 + climax * 0.72).toFixed(3);
-
-    // Prompt visible during climax, fades out as the date charges in
     promptEl.style.opacity = (climax * (1 - charge)).toFixed(3);
-
-    // Date : opacity + size driven by charge
     dateEl.style.opacity = charge.toFixed(3);
     dateEl.style.transform = 'scale(' + (0.55 + charge * 0.45).toFixed(3) + ')';
 
     if (charge >= 1 && !completed) {
       completed = true;
       revealActive = false;
-      // Unlock + bring the final scene into view
       setTimeout(function () {
         finalEl.classList.add('show');
-        finalEl.style.pointerEvents = 'auto';
         finalEl.scrollIntoView({ behavior: 'smooth' });
       }, 650);
     }
@@ -529,7 +500,7 @@
 
 
   /* ============================================================
-     4. RENDER LOOP (particles + reveal state)
+     4. RENDER LOOP
      ============================================================ */
   function render() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
