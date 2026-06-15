@@ -9,3 +9,9 @@ Thumbs.db
 
 # Vercel
 .vercel
+
+# Local dev / preview config
+.claude/
+
+# Design references (mockups, non déployés)
+captures/
