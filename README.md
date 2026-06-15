@@ -1,6 +1,8 @@
 # Invitation — one-pager
 
-Page d'invitation standalone : **un seul fichier `index.html`**, 100 % self-contained, sans build, sans bundler, sans dépendance externe.
+Page d'invitation standalone : `index.html` + assets locaux, sans build, sans bundler, **aucune dépendance externe / CDN**.
+
+> **Arborescence d'assets** : wesendapps accepte une arborescence de fichiers, on garde donc les assets en local (police dans `fonts/`, futurs PNG à venir) plutôt que tout inliner. La migration finale se fera en déplaçant le dossier complet.
 
 ## Caractéristiques
 
@@ -8,7 +10,7 @@ Page d'invitation standalone : **un seul fichier `index.html`**, 100 % self-cont
 - **Curseur custom** doré sur desktop ; support tactile complet (`touchstart/move/end` + `preventDefault`).
 - **Parallax au scroll** en JS vanilla (`requestAnimationFrame` + `scrollY`, attribut `data-parallax`).
 - **4 sections** : Hero / Invitation / Détails (cards) / Footer, responsive avec breakpoint unique à `768px`.
-- **Zéro asset externe** : décor en CSS, icônes en SVG inline, aucune police chargée (Georgia serif + system-ui).
+- **Assets locaux uniquement** : décor en CSS, icônes en SVG inline, police display **Wulkan Display** servie depuis `fonts/` (fallback Georgia serif), corps en system-ui. Aucun CDN ni Google Fonts.
 
 ## Personnaliser le contenu
 

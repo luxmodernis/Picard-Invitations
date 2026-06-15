@@ -6,6 +6,16 @@
 <meta name="theme-color" content="#070b1e">
 <title>Invitation</title>
 <style>
+  /* ---------- Custom display font (embedded, self-contained) ---------- */
+  @font-face {
+    font-family: 'Wulkan Display';
+    src: url('fonts/wulkan_display_regular/wulkan_display_regular-webfont.woff2') format('woff2'),
+         url('fonts/wulkan_display_regular/wulkan_display_regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
   :root {
     --bg-night: #0a0e2a;
     --bg-deep: #070b1e;
@@ -34,7 +44,7 @@
   }
 
   h1, h2, h3 {
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: 'Wulkan Display', 'Wulkan Display', Georgia, serif;
     color: var(--gold);
     font-weight: normal;
     text-shadow: 0 0 40px rgba(201, 168, 76, 0.3);
@@ -185,7 +195,7 @@
   .visual::before { inset: 12%; }
   .visual::after { inset: 26%; border-color: rgba(201,168,76,0.25); }
   .visual .monogram {
-    font-family: Georgia, serif;
+    font-family: 'Wulkan Display', Georgia, serif;
     font-size: clamp(3rem, 10vw, 5.5rem);
     color: var(--gold);
     text-shadow: 0 0 30px rgba(201,168,76,0.4);
@@ -230,7 +240,7 @@
   .card h3 { font-size: 1.4rem; margin-bottom: 0.8rem; }
   .card p { font-size: 0.98rem; line-height: 1.7; }
   .card .big {
-    font-family: Georgia, serif;
+    font-family: 'Wulkan Display', Georgia, serif;
     color: var(--gold);
     font-size: 1.15rem;
     display: block;
