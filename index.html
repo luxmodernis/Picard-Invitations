@@ -325,10 +325,14 @@
   const particles = [];
 
   // mult : multiplicateur de densité (0.4 = trail léger, 3.5 = clic maintenu)
-  const MAX_PARTICLES = 550;  // filet de sécurité (machines lentes) sans brider l'effet
+  const MAX_PARTICLES = 600;  // borne le coût de rendu (machines lentes)
   function spawn(x, y, mult) {
-    if (particles.length >= MAX_PARTICLES) return;
     const n = Math.max(1, Math.round(PARAMS.density * (mult || 1)));
+    // Au plafond : on recycle les plus anciennes (déjà en train de mourir) au lieu
+    // de couper l'émission -> le nuage reste plein au clic maintenu, sans cassure.
+    if (particles.length + n > MAX_PARTICLES) {
+      particles.splice(0, particles.length + n - MAX_PARTICLES);
+    }
     for (let i = 0; i < n; i++) {
       const angle = Math.random() * Math.PI * 2;
       const spd = PARAMS.speed * (0.4 + Math.random() * 1.1);
