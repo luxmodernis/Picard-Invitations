@@ -289,12 +289,15 @@
   }
   resizeCanvas();
 
-  const PARAMS = { density: 5, size: 3, speed: 1.2, decay: 0.005, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
+  // size 1.5 = poussière fine (vs 3 = grosses paillettes)
+  const PARAMS = { density: 5, size: 1.5, speed: 1.2, decay: 0.007, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
   const COLORS = ['#ffd700','#ffed4a','#fff0a0','#f5c518','#ffe680','#ffc200','#fffbe6','#ffffff'];
   const particles = [];
 
-  function spawn(x, y) {
-    for (let i = 0; i < PARAMS.density; i++) {
+  // mult : multiplicateur de densité (0.4 = trail léger, 3.5 = clic maintenu)
+  function spawn(x, y, mult) {
+    const n = Math.max(1, Math.round(PARAMS.density * (mult || 1)));
+    for (let i = 0; i < n; i++) {
       const angle = Math.random() * Math.PI * 2;
       const spd = PARAMS.speed * (0.4 + Math.random() * 1.1);
       particles.push({
@@ -309,23 +312,31 @@
   let pressed = false;
   let lastX = 0, lastY = 0;
   let cursorX = -100, cursorY = -100, cursorVisible = false;
+  let firstMove = true; // évite un spawn de (0,0) au premier mousemove
 
-  function emitTo(x, y) {
+  function emitTo(x, y, mult) {
     const dx = x - lastX, dy = y - lastY;
     const dist = Math.hypot(dx, dy);
     if (dist >= PARAMS.step) {
       const steps = Math.floor(dist / PARAMS.step);
-      for (let i = 1; i <= steps; i++) { const t = i / steps; spawn(lastX + dx * t, lastY + dy * t); }
+      for (let i = 1; i <= steps; i++) { const t = i / steps; spawn(lastX + dx * t, lastY + dy * t, mult || 1); }
       lastX = x; lastY = y;
     }
   }
-  function pressStart(x, y) { pressed = true; lastX = x; lastY = y; spawn(x, y); }
+  function pressStart(x, y) { pressed = true; lastX = x; lastY = y; spawn(x, y, 1); }
   function pressEnd() { pressed = false; }
 
   window.addEventListener('mousedown', function (e) { pressStart(e.clientX, e.clientY); });
   window.addEventListener('mousemove', function (e) {
     cursorX = e.clientX; cursorY = e.clientY; cursorVisible = true;
-    if (pressed) emitTo(e.clientX, e.clientY);
+    // Premier mouvement : initialise lastX/Y sans émettre (évite le spray de (0,0))
+    if (firstMove) { firstMove = false; lastX = e.clientX; lastY = e.clientY; return; }
+    if (hasHover) {
+      // Desktop : trail léger en permanence, 3.5× plus dense au clic maintenu
+      emitTo(e.clientX, e.clientY, pressed ? 3.5 : 0.4);
+    } else if (pressed) {
+      emitTo(e.clientX, e.clientY, 1);
+    }
   });
   window.addEventListener('mouseup', pressEnd);
 
