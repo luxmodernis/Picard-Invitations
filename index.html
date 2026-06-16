@@ -79,29 +79,38 @@
     pointer-events: none;
   }
   /* Ciel étoilé : base toujours présente derrière -> jamais de bande noire */
-  .ciel { background-image: url('IMG/Ciel.png'); background-size: cover; background-position: center top; z-index: 1; }
+  .ciel {
+    background-image: url('IMG/Ciel.png');
+    background-image: image-set(url('IMG/Ciel.webp') type('image/webp'), url('IMG/Ciel.png') type('image/png'));
+    background-size: cover; background-position: center top; z-index: 1;
+  }
   /* Nuage : calque PLEIN (non rogné), l'alpha haut/bas du PNG gère les bords */
   .nuages {
     background-image: url('IMG/Nuages.png');
-    background-size: 100% auto;
-    background-position: center top;
-    z-index: 2;
+    background-image: image-set(url('IMG/Nuages.webp') type('image/webp'), url('IMG/Nuages.png') type('image/png'));
+    background-size: 100% auto; background-position: center top; z-index: 2;
   }
   /* Forêt : 3 calques, PLEINE LARGEUR (pas de crop latéral), ALIGNÉS EN BAS */
   .foret { background-size: 100% auto; background-position: center bottom; }
   .f3 {
-    background-image: url('IMG/foret-3.png'); z-index: 3;
+    background-image: url('IMG/foret-3.png');
+    background-image: image-set(url('IMG/foret-3.webp') type('image/webp'), url('IMG/foret-3.png') type('image/png'));
+    z-index: 3;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
   }
   /* Masque de fondu en haut : les cimes se fondent dans le ciel (aucune coupure) */
   .f2 {
-    background-image: url('IMG/foret-2.png'); z-index: 4;
+    background-image: url('IMG/foret-2.png');
+    background-image: image-set(url('IMG/foret-2.webp') type('image/webp'), url('IMG/foret-2.png') type('image/png'));
+    z-index: 4;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
   }
   .f1 {
-    background-image: url('IMG/foret-1.png'); z-index: 5;
+    background-image: url('IMG/foret-1.png');
+    background-image: image-set(url('IMG/foret-1.webp') type('image/webp'), url('IMG/foret-1.png') type('image/png'));
+    z-index: 5;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
   }
@@ -234,7 +243,7 @@
   </div>
 
   <div class="forest-stage">
-    <div class="orbe-wrap"><div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div></div>
+    <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.png" alt="" draggable="false"></picture></div></div>
     <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
     <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
     <p class="txt txt-final">
@@ -255,6 +264,10 @@
   /* ============================================================
      1. PARTICLE EMITTER
      ============================================================ */
+  // Empêche le navigateur de restaurer la position de scroll au rechargement
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
   const canvas = document.getElementById('particles');
   const ctx = canvas.getContext('2d');
   const ffCanvas = document.getElementById('ff-canvas');
@@ -435,16 +448,20 @@
   function makeFirefly() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // Mobile : taille réduite, positionnées plus bas (près du sol)
+    const szMult  = hasHover ? 1   : 0.42;
+    const yBase   = hasHover ? 0.58 : 0.72;
+    const yRange  = hasHover ? 0.34 : 0.20;
     return {
       x: vw * (0.04 + Math.random() * 0.92),
-      baseY: vh * (0.58 + Math.random() * 0.34),
+      baseY: vh * (yBase + Math.random() * yRange),
       vx: (Math.random() - 0.5) * 0.35,
       phaseY: Math.random() * Math.PI * 2,
       freqY: 0.004 + Math.random() * 0.006,
-      ampY: 10 + Math.random() * 22,
+      ampY: (hasHover ? 10 : 6) + Math.random() * (hasHover ? 22 : 12),
       phaseOp: Math.random() * Math.PI * 2,
       freqOp: 0.008 + Math.random() * 0.012,
-      size: 1.6 + Math.random() * 1.8,
+      size: (1.6 + Math.random() * 1.8) * szMult,
     };
   }
 
