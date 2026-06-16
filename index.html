@@ -320,12 +320,14 @@
   resizeCanvas();
 
   // size 1.5 = poussière fine (vs 3 = grosses paillettes)
-  const PARAMS = { density: 4, size: 1.5, speed: 1.2, decay: 0.007, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
+  const PARAMS = { density: 3, size: 1.5, speed: 1.2, decay: 0.015, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
   const COLORS = ['#ffd700','#ffed4a','#fff0a0','#f5c518','#ffe680','#ffc200','#fffbe6','#ffffff'];
   const particles = [];
 
   // mult : multiplicateur de densité (0.4 = trail léger, 3.5 = clic maintenu)
+  const MAX_PARTICLES = 550;  // filet de sécurité (machines lentes) sans brider l'effet
   function spawn(x, y, mult) {
+    if (particles.length >= MAX_PARTICLES) return;
     const n = Math.max(1, Math.round(PARAMS.density * (mult || 1)));
     for (let i = 0; i < n; i++) {
       const angle = Math.random() * Math.PI * 2;
