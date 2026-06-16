@@ -104,11 +104,15 @@
     background-image: url('IMG/foret-2.png');
     background-image: image-set(url('IMG/foret-2.webp') type('image/webp'), url('IMG/foret-2.png') type('image/png'));
     z-index: 4;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   .f1 {
     background-image: url('IMG/foret-1.png');
     background-image: image-set(url('IMG/foret-1.webp') type('image/webp'), url('IMG/foret-1.png') type('image/png'));
     z-index: 5;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   /* Voile bleu qui monte avec le clic maintenu (effet "Soyez prêts") */
   .veil {
@@ -459,14 +463,15 @@
     // Background-position : remappé sur la fenêtre de visibilité de chaque couche
     // (la couche entre à l'écran quand translateY < vh, soit arrive > 1 - 1/factor)
     // f3 entre quand arrive > 0.29, f2 > 0.52, f1 > 0.67
-    // Remap bgPos sur la fenêtre de visibilité (arrive où la couche entre à l'écran)
-    // Max réduit pour que la scène posée montre canopée+troncs sur grand écran
+    // Pan de la cime (0%) vers le sol (100%) sur la fenêtre de visibilité de
+    // chaque couche. ARRIVE À 100% AU REPOS → le sol est ancré en bas de l'écran,
+    // quelle que soit la largeur (l'image portrait est plus haute que le viewport).
     const f3Vis = clamp((arrive - 0.29) / 0.71, 0, 1);
     const f2Vis = clamp((arrive - 0.52) / 0.48, 0, 1);
     const f1Vis = clamp((arrive - 0.67) / 0.33, 0, 1);
-    f3.style.backgroundPosition = 'center ' + (f3Vis * 38).toFixed(1) + '%';
-    f2.style.backgroundPosition = 'center ' + (f2Vis * 55).toFixed(1) + '%';
-    f1.style.backgroundPosition = 'center ' + (f1Vis * 72).toFixed(1) + '%';
+    f3.style.backgroundPosition = 'center ' + (f3Vis * 100).toFixed(1) + '%';
+    f2.style.backgroundPosition = 'center ' + (f2Vis * 100).toFixed(1) + '%';
+    f1.style.backgroundPosition = 'center ' + (f1Vis * 100).toFixed(1) + '%';
 
     ticking = false;
   }
