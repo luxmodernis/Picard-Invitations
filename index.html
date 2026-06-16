@@ -90,29 +90,22 @@
     background-image: image-set(url('IMG/Nuages.webp') type('image/webp'), url('IMG/Nuages.png') type('image/png'));
     background-size: 100% auto; background-position: center top; z-index: 2;
   }
-  /* Forêt : 3 calques, PLEINE LARGEUR (pas de crop latéral), ALIGNÉS EN BAS */
-  .foret { background-size: 100% auto; background-position: center bottom; }
+  /* Forêt : pleine largeur, position-Y gérée par JS (parallaxe cimes→sol) */
+  .foret { background-size: 100% auto; background-position: center 0%; }
   .f3 {
     background-image: url('IMG/foret-3.png');
     background-image: image-set(url('IMG/foret-3.webp') type('image/webp'), url('IMG/foret-3.png') type('image/png'));
     z-index: 3;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
   }
-  /* Masque de fondu en haut : les cimes se fondent dans le ciel (aucune coupure) */
   .f2 {
     background-image: url('IMG/foret-2.png');
     background-image: image-set(url('IMG/foret-2.webp') type('image/webp'), url('IMG/foret-2.png') type('image/png'));
     z-index: 4;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
   }
   .f1 {
     background-image: url('IMG/foret-1.png');
     background-image: image-set(url('IMG/foret-1.webp') type('image/webp'), url('IMG/foret-1.png') type('image/png'));
     z-index: 5;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
   }
   /* Voile bleu qui monte avec le clic maintenu (effet "Soyez prêts") */
   .veil {
@@ -182,18 +175,38 @@
     will-change: opacity, transform;
   }
   .txt-prompt { font-size: clamp(1.5rem, 4vw, 2.6rem); }
-  /* "Rendez-vous" : agrandi (+40%) */
-  .txt-date { font-size: clamp(1.75rem, 4.5vw, 2.9rem); }
-  .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.35em; letter-spacing: 0.08em; }
-  .txt-final .small {
-    display: block; font-size: clamp(1.05rem, 2.8vw, 1.6rem);
-    color: var(--gold-soft); margin-bottom: 0.9rem;
+  .txt-date { font-size: clamp(2.4rem, 6.5vw, 4.5rem); }
+  .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.2em; letter-spacing: 0.08em; }
+
+  /* Lettres magiques : chaque .ltr apparaît via @keyframes ltrReveal */
+  .txt-date .ltr { display: inline-block; opacity: 0; }
+  .txt-date .ltr.on {
+    animation: ltrReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: calc(var(--i) * 40ms);
   }
-  .txt-final .big {
-    display: block; font-family: 'Wulkan Display', Georgia, serif;
-    color: var(--gold); font-size: clamp(2.6rem, 7.5vw, 4.8rem);
-    text-shadow: 0 0 40px rgba(201,168,76,0.45);
+  @keyframes ltrReveal {
+    from { opacity: 0; filter: blur(12px); transform: translateY(6px); }
+    to   { opacity: 1; filter: blur(0px);  transform: translateY(0);   }
   }
+
+  /* "Le compte à rebours..." : petit texte en bas, à la place du bouton */
+  .txt-final {
+    align-self: end;
+    padding-bottom: 10vh;
+    font-size: clamp(0.9rem, 2.4vw, 1.3rem);
+    color: var(--gold-soft);
+    text-shadow: none;
+    line-height: 1.65;
+  }
+
+  /* Texte de transition ciel → forêt */
+  .trans-text {
+    position: absolute; inset: 0; z-index: 10;
+    display: grid; place-items: center;
+    text-align: center; pointer-events: none;
+    opacity: 0; will-change: opacity, transform;
+  }
+  .trans-text h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
 
   .replay {
     position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%);
@@ -242,13 +255,16 @@
     <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
   </div>
 
+  <div class="trans-text">
+    <h2>à un nouveau<br>rendez-vous</h2>
+  </div>
+
   <div class="forest-stage">
     <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.png" alt="" draggable="false"></picture></div></div>
     <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
     <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
     <p class="txt txt-final">
-      <span class="small">Le compte à rebours est lancé !</span>
-      <span class="big">Soyez prêts !</span>
+      Le compte à rebours est lancé !<br>Soyez prêts !
     </p>
   </div>
 
@@ -376,11 +392,6 @@
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
 
-  // Distance d'arrivée par couche : f1 (devant) parcourt le plus de chemin,
-  // f3 (fond) le moins -> profondeur / parallaxe.
-  const OFFSET_F1 = 2.70;
-  const OFFSET_F2 = 2.30;
-  const OFFSET_F3 = 2.00;
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
   let arrive = 0;          // 0 = en haut (ciel), 1 = forêt posée
@@ -424,11 +435,20 @@
     // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
 
-    // Forêt : remonte du bas, vitesses différentes -> profondeur.
-    // foret-3 (fond) remontée de ~10% en position posée (entre prev et 20%).
-    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3 - arrive * vh * 0.10).toFixed(1) + 'px)';
-    f2.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F2).toFixed(1) + 'px)';
-    f1.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F1).toFixed(1) + 'px)';
+    // Texte de transition "à un nouveau / rendez-vous"
+    const ttIn  = clamp((arrive - 0.15) / 0.20, 0, 1);
+    const ttOut = clamp((arrive - 0.60) / 0.15, 0, 1);
+    const ttAlpha = ttIn * (1 - ttOut);
+    transText.style.opacity = ttAlpha.toFixed(3);
+    transText.style.transform = 'translateY(' + (((1 - ttIn) * 30) + (ttOut * -30)).toFixed(1) + 'px)';
+
+    // Forêt : parallaxe exagéré + panning background de cimes (0%) vers sol (100%)
+    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * 1.4).toFixed(1) + 'px)';
+    f2.style.transform = 'translateY(' + ((1 - arrive) * vh * 2.1).toFixed(1) + 'px)';
+    f1.style.transform = 'translateY(' + ((1 - arrive) * vh * 3.0).toFixed(1) + 'px)';
+    f3.style.backgroundPosition = 'center ' + (arrive * 60).toFixed(1) + '%';
+    f2.style.backgroundPosition = 'center ' + (arrive * 85).toFixed(1) + '%';
+    f1.style.backgroundPosition = 'center ' + Math.min(100, arrive * 115).toFixed(1) + '%';
 
     ticking = false;
   }
@@ -444,12 +464,42 @@
   const txtPrompt = document.querySelector('.txt-prompt');
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
+  const transText = document.querySelector('.trans-text');
   const replay    = document.querySelector('.replay');
   const chargeBar = document.getElementById('charge-bar');
+
+  /* Découpe chaque caractère non-espace en <span class="ltr" style="--i:N"> */
+  function splitLetters(el) {
+    let idx = 0;
+    function walk(node) {
+      if (node.nodeType === 3) {
+        const text = node.textContent;
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (/\S/.test(ch)) {
+            const s = document.createElement('span');
+            s.className = 'ltr';
+            s.style.setProperty('--i', idx++);
+            s.textContent = ch;
+            frag.appendChild(s);
+          } else {
+            frag.appendChild(document.createTextNode(ch));
+          }
+        }
+        node.parentNode.replaceChild(frag, node);
+      } else if (node.nodeType === 1) {
+        Array.from(node.childNodes).forEach(walk);
+      }
+    }
+    walk(el);
+  }
+  splitLetters(txtDate);
 
   let charge = 0;
   let completed = false;
   let barVisible = false;
+  let dateLettersRevealed = false;
   const CHARGE_UP = 0.009;
   const CHARGE_DOWN = 0.02;
   const MAX_BLUR = 14;
@@ -457,13 +507,19 @@
   replay.addEventListener('click', function () {
     completed = false; charge = 0; barVisible = false;
     forestSettled = false; returningToTop = true; clearTimeout(autoScrollTimer);
+    dateLettersRevealed = false;
+    txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); });
+    txtDate.style.transition = 'none';
+    txtDate.style.opacity = '0';
+    txtDate.style.transform = '';
     chargeBar.style.transition = 'none';
     chargeBar.style.opacity = '0';
     chargeBar.style.width = '0%';
     replay.classList.remove('show');
     bgwrap.style.filter = 'none';
     txtFinal.style.transition = 'none';
-    txtDate.style.transition = 'none';
+    txtFinal.style.opacity = '0';
+    txtFinal.style.transform = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
@@ -569,9 +625,13 @@
       txtPrompt.style.opacity = (orbeIn * (1 - pOut)).toFixed(3);
       txtPrompt.style.transform = 'translateY(' + (pOut * -28).toFixed(1) + 'px)';
 
-      const dIn = clamp((charge - 0.18) / 0.5, 0, 1);
-      txtDate.style.opacity = dIn.toFixed(3);
-      txtDate.style.transform = 'translateY(' + ((1 - dIn) * 30).toFixed(1) + 'px) scale(' + (0.82 + dIn * 0.18).toFixed(3) + ')';
+      // Révélation lettre par lettre à partir de charge = 0.18 (déclenchement unique)
+      if (charge >= 0.18 && !dateLettersRevealed) {
+        dateLettersRevealed = true;
+        txtDate.style.transition = 'none';
+        txtDate.style.opacity = '1';
+        txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.add('on'); });
+      }
 
       txtFinal.style.opacity = '0';
     }
@@ -594,12 +654,9 @@
     if (charge >= 1 && !completed) {
       completed = true; revealActive = false;
       txtPrompt.style.opacity = '0';
-      txtDate.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      txtDate.style.opacity = '0';
-      txtDate.style.transform = 'translateY(-30px) scale(1.06)';
-      txtFinal.style.transition = 'opacity 1s ease 0.35s, transform 1s ease 0.35s';
+      // txtDate reste visible et fixe (pas de fadeout)
+      txtFinal.style.transition = 'opacity 1s ease 0.35s';
       txtFinal.style.opacity = '1';
-      txtFinal.style.transform = 'translateY(0)';
       replay.classList.add('show');
     }
   }
