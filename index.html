@@ -73,20 +73,27 @@
   }
   /* Ciel étoilé : base toujours présente derrière -> jamais de bande noire */
   .ciel { background-image: url('IMG/Ciel.png'); background-size: cover; background-position: center top; z-index: 1; }
-  /* Nuage : bande pleine largeur ancrée TOUT EN BAS de l'écran au départ */
+  /* Nuage : calque PLEIN (non rogné), l'alpha haut/bas du PNG gère les bords */
   .nuages {
     background-image: url('IMG/Nuages.png');
     background-size: 100% auto;
     background-position: center top;
-    inset: auto 0 -2% 0;
-    height: 60%;
     z-index: 2;
   }
   /* Forêt : 3 calques, PLEINE LARGEUR (pas de crop latéral), ALIGNÉS EN BAS */
   .foret { background-size: 100% auto; background-position: center bottom; }
   .f3 { background-image: url('IMG/foret-3.png'); z-index: 3; }
-  .f2 { background-image: url('IMG/foret-2.png'); z-index: 4; }
-  .f1 { background-image: url('IMG/foret-1.png'); z-index: 5; }
+  /* Masque de fondu en haut : les cimes se fondent dans le ciel (aucune coupure) */
+  .f2 {
+    background-image: url('IMG/foret-2.png'); z-index: 4;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
+  }
+  .f1 {
+    background-image: url('IMG/foret-1.png'); z-index: 5;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%);
+  }
   /* Voile bleu qui monte avec le clic maintenu (effet "Soyez prêts") */
   .veil {
     position: absolute; inset: 0; z-index: 6;
@@ -328,19 +335,19 @@
     const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
-    // Ciel : léger drift vers le haut
-    ciel.style.transform = 'translateY(' + (-arrive * vh * 0.06).toFixed(1) + 'px) scale(1.05)';
+    // Ciel : léger drift (fond lointain -> bouge le moins)
+    ciel.style.transform = 'translateY(' + (-arrive * vh * 0.12).toFixed(1) + 'px) scale(1.05)';
 
-    // Nuage : pleine largeur en bas, s'efface en montant un peu
-    nuages.style.transform = 'translateY(' + (-arrive * vh * 0.28).toFixed(1) + 'px)';
-    nuages.style.opacity = clamp(1 - arrive * 1.4, 0, 1).toFixed(3);
+    // Nuage : bas de l'écran au départ, MONTE BEAUCOUP et sort par le haut
+    // (pas de changement d'opacité ; non rogné -> l'alpha du PNG gère les bords)
+    nuages.style.transform = 'translateY(' + ((0.42 - arrive * 1.75) * vh).toFixed(1) + 'px)';
 
-    // Contenu ciel : fond en fondu pendant la descente
-    skyContent.style.transform = 'translateY(' + (-arrive * vh * 0.08).toFixed(1) + 'px)';
-    skyContent.style.opacity = clamp(1 - arrive * 1.5, 0, 1).toFixed(3);
+    // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
+    skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
 
-    // Forêt : remonte du bas, vitesses différentes -> profondeur
-    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3).toFixed(1) + 'px)';
+    // Forêt : remonte du bas, vitesses différentes -> profondeur.
+    // foret-3 (fond) remontée de ~20% en position posée.
+    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3 - arrive * vh * 0.20).toFixed(1) + 'px)';
     f2.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F2).toFixed(1) + 'px)';
     f1.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F1).toFixed(1) + 'px)';
 
