@@ -82,7 +82,11 @@
   }
   /* Forêt : 3 calques, PLEINE LARGEUR (pas de crop latéral), ALIGNÉS EN BAS */
   .foret { background-size: 100% auto; background-position: center bottom; }
-  .f3 { background-image: url('IMG/foret-3.png'); z-index: 3; }
+  .f3 {
+    background-image: url('IMG/foret-3.png'); z-index: 3;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 18%);
+  }
   /* Masque de fondu en haut : les cimes se fondent dans le ciel (aucune coupure) */
   .f2 {
     background-image: url('IMG/foret-2.png'); z-index: 4;
@@ -189,11 +193,21 @@
   }
   .replay.show { opacity: 1; visibility: visible; }
   .replay:hover { background: var(--gold); color: var(--bg-deep); }
+
+  /* ============ Barre de progression (clic maintenu) ============ */
+  #charge-bar {
+    position: fixed; top: 0; left: 0; height: 7px; width: 0%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-soft) 100%);
+    z-index: 9997; opacity: 0; pointer-events: none;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px rgba(201,168,76,0.55), 0 0 4px rgba(230,200,121,0.4);
+  }
 </style>
 </head>
 <body>
 
 <canvas id="particles"></canvas>
+<div id="charge-bar"></div>
 
 <main class="stage-fixed">
   <div class="bgwrap">
@@ -346,15 +360,14 @@
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
 
     // Forêt : remonte du bas, vitesses différentes -> profondeur.
-    // foret-3 (fond) remontée de ~20% en position posée.
-    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3 - arrive * vh * 0.20).toFixed(1) + 'px)';
+    // foret-3 (fond) remontée de ~10% en position posée (entre prev et 20%).
+    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3 - arrive * vh * 0.10).toFixed(1) + 'px)';
     f2.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F2).toFixed(1) + 'px)';
     f1.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F1).toFixed(1) + 'px)';
 
     ticking = false;
   }
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', function () { resizeCanvas(); updateScroll(); });
 
 
   /* ============================================================
@@ -367,20 +380,93 @@
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
   const replay    = document.querySelector('.replay');
+  const chargeBar = document.getElementById('charge-bar');
 
   let charge = 0;
   let completed = false;
+  let barVisible = false;
   const CHARGE_UP = 0.009;
   const CHARGE_DOWN = 0.02;
-  const MAX_BLUR = 14;     // px de flou à pleine charge
+  const MAX_BLUR = 14;
 
   replay.addEventListener('click', function () {
-    completed = false; charge = 0;
+    completed = false; charge = 0; barVisible = false;
+    chargeBar.style.transition = 'none';
+    chargeBar.style.opacity = '0';
+    chargeBar.style.width = '0%';
     replay.classList.remove('show');
     bgwrap.style.filter = 'none';
     txtFinal.style.transition = 'none';
     txtDate.style.transition = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+
+  /* ============================================================
+     LUCIOLES — flottent doucement au-dessus du sol de la forêt
+     ============================================================ */
+  const NUM_FF = 13;
+  const fireflies = [];
+
+  function makeFirefly() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    return {
+      x: vw * (0.04 + Math.random() * 0.92),
+      baseY: vh * (0.58 + Math.random() * 0.34),
+      vx: (Math.random() - 0.5) * 0.35,
+      phaseY: Math.random() * Math.PI * 2,
+      freqY: 0.004 + Math.random() * 0.006,
+      ampY: 10 + Math.random() * 22,
+      phaseOp: Math.random() * Math.PI * 2,
+      freqOp: 0.008 + Math.random() * 0.012,
+      size: 1.6 + Math.random() * 1.8,
+    };
+  }
+
+  function initFireflies() {
+    fireflies.length = 0;
+    for (let i = 0; i < NUM_FF; i++) fireflies.push(makeFirefly());
+  }
+  initFireflies();
+
+  function drawFireflies() {
+    if (arrive < 0.88) return;
+    const globalFade = clamp((arrive - 0.88) / 0.12, 0, 1);
+    const vw = window.innerWidth;
+
+    for (let i = 0; i < fireflies.length; i++) {
+      const ff = fireflies[i];
+      ff.phaseY  += ff.freqY;
+      ff.phaseOp += ff.freqOp;
+      ff.x += ff.vx;
+      if (ff.x < -10) ff.x = vw + 5;
+      if (ff.x > vw + 10) ff.x = -5;
+
+      const dy = Math.sin(ff.phaseY) * ff.ampY;
+      const y  = ff.baseY + dy;
+      const pulse = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(ff.phaseOp));
+      const alpha = globalFade * pulse;
+
+      // Halo doux
+      ctx.globalAlpha = alpha * 0.22;
+      ctx.shadowBlur = 18; ctx.shadowColor = '#b8d8ff';
+      ctx.beginPath();
+      ctx.arc(ff.x, y, ff.size * 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#b8d8ff'; ctx.fill();
+
+      // Cœur brillant
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = 6; ctx.shadowColor = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ff.x, y, ff.size, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8f4ff'; ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  }
+
+  window.addEventListener('resize', function () {
+    resizeCanvas(); updateScroll(); initFireflies();
   });
 
   function reveal() {
@@ -412,6 +498,21 @@
       txtDate.style.transform = 'translateY(' + ((1 - dIn) * 30).toFixed(1) + 'px) scale(' + (0.82 + dIn * 0.18).toFixed(3) + ')';
 
       txtFinal.style.opacity = '0';
+    }
+
+    // Barre de progression
+    if (arrive >= 0.98 && !completed) {
+      if (!barVisible) {
+        barVisible = true;
+        chargeBar.style.transition = 'none';
+        chargeBar.style.opacity = '1';
+      }
+      chargeBar.style.width = (charge * 100).toFixed(1) + '%';
+    } else if (completed) {
+      chargeBar.style.transition = 'opacity 1.2s ease';
+      chargeBar.style.opacity = '0';
+    } else {
+      chargeBar.style.opacity = '0'; barVisible = false;
     }
 
     if (charge >= 1 && !completed) {
@@ -449,6 +550,8 @@
       ctx.fillStyle = p.color; ctx.fill();
     }
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    drawFireflies();
 
     if (hasHover && cursorVisible) {
       ctx.beginPath();
