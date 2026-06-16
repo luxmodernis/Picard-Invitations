@@ -368,17 +368,20 @@
     // Premier mouvement : initialise lastX/Y sans émettre (évite le spray de (0,0))
     if (firstMove) { firstMove = false; lastX = e.clientX; lastY = e.clientY; return; }
     if (hasHover) {
-      // Desktop : trail léger en permanence, 3.5× plus dense au clic maintenu
-      emitTo(e.clientX, e.clientY, pressed ? 3.5 : 0.4);
+      // Desktop : trail léger en permanence, plus dense au clic maintenu
+      emitTo(e.clientX, e.clientY, pressed ? 1.8 : 0.4);
     } else if (pressed) {
       emitTo(e.clientX, e.clientY, 1);
     }
   });
   window.addEventListener('mouseup', pressEnd);
 
+  // Sur mobile, on peut jouer avec les particules dès que la forêt est posée
+  // ET après la révélation finale (message affiché). arrive>0.98 couvre les deux.
+  function canTouchPlay() { return arrive > 0.98; }
   window.addEventListener('touchstart', function (e) {
     const t = e.touches[0];
-    if (revealActive) {
+    if (canTouchPlay()) {
       pressStart(t.clientX, t.clientY);
       e.preventDefault();
     } else if (hasHover) {
@@ -389,8 +392,8 @@
   }, { passive: false });
   window.addEventListener('touchmove', function (e) {
     const t = e.touches[0];
-    if (revealActive) {
-      emitTo(t.clientX, t.clientY, 3.5);
+    if (canTouchPlay()) {
+      emitTo(t.clientX, t.clientY, 1.8);
       e.preventDefault();
     } else if (hasHover) {
       emitTo(t.clientX, t.clientY);
@@ -398,7 +401,7 @@
   }, { passive: false });
   window.addEventListener('touchend', function (e) {
     pressEnd();
-    if (revealActive) e.preventDefault();
+    if (canTouchPlay()) e.preventDefault();
   }, { passive: false });
 
 
