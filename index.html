@@ -354,7 +354,7 @@
   window.addEventListener('touchmove', function (e) {
     const t = e.touches[0];
     if (revealActive) {
-      emitTo(t.clientX, t.clientY);
+      emitTo(t.clientX, t.clientY, 3.5);
       e.preventDefault();
     } else if (hasHover) {
       emitTo(t.clientX, t.clientY);
