@@ -32,7 +32,6 @@
     background: var(--bg-deep);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    /* Cliquer pour les paillettes ne doit jamais attraper texte / image */
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
@@ -59,35 +58,48 @@
     pointer-events: none; z-index: 9999;
   }
 
-  /* Fonds plein écran : COVER centré -> remplit l'écran, cadrage propre */
+  /* ============ Scène fixe (scrollytelling) ============ */
+  .stage-fixed { position: fixed; inset: 0; overflow: hidden; z-index: 1; }
+  .scroll-driver { height: 300vh; }   /* longueur de scroll de la descente */
+
+  /* Wrapper des décors : c'est lui qu'on floute au clic maintenu */
+  .bgwrap { position: absolute; inset: 0; z-index: 1; will-change: filter; }
+
   .bg {
     position: absolute; inset: 0;
     background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    will-change: transform;
+    will-change: transform, opacity;
     pointer-events: none;
   }
-
-  /* ============ Écran 1 : Ciel ============ */
-  #sky {
-    position: relative;
-    height: 100svh;
-    overflow: hidden;
-    background: #04060f;
-  }
-  .sky-ciel   { background-image: url('IMG/Ciel.png'); }
-  .sky-nuages {
+  /* Ciel étoilé : base toujours présente derrière -> jamais de bande noire */
+  .ciel { background-image: url('IMG/Ciel.png'); background-size: cover; background-position: center top; z-index: 1; }
+  /* Nuage : bande pleine largeur ancrée TOUT EN BAS de l'écran au départ */
+  .nuages {
     background-image: url('IMG/Nuages.png');
-    background-position: center 38%;
+    background-size: 100% auto;
+    background-position: center top;
+    inset: auto 0 -2% 0;
+    height: 60%;
     z-index: 2;
   }
+  /* Forêt : 3 calques, PLEINE LARGEUR (pas de crop latéral), ALIGNÉS EN BAS */
+  .foret { background-size: 100% auto; background-position: center bottom; }
+  .f3 { background-image: url('IMG/foret-3.png'); z-index: 3; }
+  .f2 { background-image: url('IMG/foret-2.png'); z-index: 4; }
+  .f1 { background-image: url('IMG/foret-1.png'); z-index: 5; }
+  /* Voile bleu qui monte avec le clic maintenu (effet "Soyez prêts") */
+  .veil {
+    position: absolute; inset: 0; z-index: 6;
+    background: radial-gradient(circle at 50% 52%, rgba(40,55,150,0.0), rgba(10,16,55,0.85) 80%);
+    opacity: 0; pointer-events: none;
+  }
+
+  /* ---- Contenu ciel (logo / invite / scroll) ---- */
   .sky-content {
-    position: absolute; inset: 0; z-index: 5;
+    position: absolute; inset: 0; z-index: 10;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    text-align: center;
-    pointer-events: none;
+    text-align: center; pointer-events: none;
     will-change: opacity, transform;
   }
   .logo {
@@ -99,10 +111,11 @@
   .invite-line {
     font-size: clamp(2rem, 5.5vw, 3.6rem);
     letter-spacing: 0.04em;
-    margin-bottom: 3.2rem;
+    margin-bottom: 3.4rem;
   }
+  /* picto "scrollez" : agrandi (+25%) */
   .scroll-badge {
-    width: clamp(130px, 14vw, 185px);
+    width: clamp(165px, 17.5vw, 232px);
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
   }
@@ -111,77 +124,53 @@
     50% { transform: translateY(10px); opacity: 1; }
   }
 
-  /* ============ Écran 2 : Forêt (arrivée parallax -> figée) ============ */
-  #forest {
-    position: relative;
-    height: 200svh;            /* runway : arrivée parallax puis pin statique */
-    background: #04060f;
-  }
-  .forest-pin {
-    position: sticky; top: 0;
-    height: 100svh;
-    overflow: hidden;
-  }
-  .f3 { background-image: url('IMG/foret-3.png'); }
-  .f2 { background-image: url('IMG/foret-2.png'); z-index: 2; }
-  .f1 { background-image: url('IMG/foret-1.png'); z-index: 3; }
-
-  .stage {
-    position: absolute; inset: 0; z-index: 5;
+  /* ---- Scène forêt (orbe + textes) ---- */
+  .forest-stage {
+    position: absolute; inset: 0; z-index: 11;
     display: grid; place-items: center;
-    text-align: center;
-    pointer-events: none;
+    text-align: center; pointer-events: none;
   }
-  .stage > * { grid-area: 1 / 1; }
+  .forest-stage > * { grid-area: 1 / 1; }
 
   .orbe-wrap {
     width: clamp(260px, 52vw, 560px);
     aspect-ratio: 1 / 1;
     display: grid; place-items: center;
     will-change: transform, opacity;
+    opacity: 0;
   }
-  .orbe-spin {
-    width: 100%; height: 100%;
-    animation: spin 26s linear infinite;   /* sens inversé */
-  }
+  .orbe-spin { width: 100%; height: 100%; animation: spin 26s linear infinite; }
   .orbe-spin img {
-    width: 100%; height: 100%;
-    object-fit: contain;
+    width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 0 30px rgba(230, 200, 121, 0.35));
   }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
-  /* Les 3 textes : même centre, cross-fade + léger défilement vertical */
   .txt {
-    grid-area: 1 / 1;
-    z-index: 3;
+    grid-area: 1 / 1; z-index: 3;
     font-family: 'Wulkan Display', Georgia, serif;
     color: var(--gold-soft);
-    text-shadow: 0 0 26px rgba(201, 168, 76, 0.55);
-    line-height: 1.3;
-    opacity: 0;
+    text-shadow: 0 0 30px rgba(201, 168, 76, 0.6);
+    line-height: 1.3; opacity: 0;
     will-change: opacity, transform;
   }
   .txt-prompt { font-size: clamp(1.5rem, 4vw, 2.6rem); }
-  .txt-date   { font-size: clamp(1.25rem, 3.2vw, 2.05rem); }
+  /* "Rendez-vous" : agrandi (+40%) */
+  .txt-date { font-size: clamp(1.75rem, 4.5vw, 2.9rem); }
   .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.35em; letter-spacing: 0.08em; }
   .txt-final .small {
-    display: block;
-    font-size: clamp(1rem, 2.6vw, 1.5rem);
-    color: var(--gold-soft);
-    margin-bottom: 0.9rem;
+    display: block; font-size: clamp(1.05rem, 2.8vw, 1.6rem);
+    color: var(--gold-soft); margin-bottom: 0.9rem;
   }
   .txt-final .big {
-    display: block;
-    font-family: 'Wulkan Display', Georgia, serif;
-    color: var(--gold);
-    font-size: clamp(2.4rem, 7vw, 4.6rem);
-    text-shadow: 0 0 40px rgba(201,168,76,0.4);
+    display: block; font-family: 'Wulkan Display', Georgia, serif;
+    color: var(--gold); font-size: clamp(2.6rem, 7.5vw, 4.8rem);
+    text-shadow: 0 0 40px rgba(201,168,76,0.45);
   }
+
   .replay {
-    position: absolute;
-    left: 50%; bottom: 7vh; transform: translateX(-50%);
-    z-index: 6;
+    position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%);
+    z-index: 12;
     font-family: 'Wulkan Display', Georgia, serif;
     background: transparent; color: var(--gold);
     border: 1px solid var(--gold); border-radius: 999px;
@@ -199,37 +188,36 @@
 
 <canvas id="particles"></canvas>
 
-<!-- ===== Écran 1 : Ciel ===== -->
-<section id="sky">
-  <div class="bg sky-ciel"></div>
-  <div class="bg sky-nuages"></div>
+<main class="stage-fixed">
+  <div class="bgwrap">
+    <div class="bg ciel"></div>
+    <div class="bg nuages"></div>
+    <div class="bg foret f3"></div>
+    <div class="bg foret f2"></div>
+    <div class="bg foret f1"></div>
+    <div class="veil"></div>
+  </div>
+
   <div class="sky-content">
     <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
     <h1 class="invite-line">vous invite</h1>
     <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
   </div>
-</section>
 
-<!-- ===== Écran 2 : Forêt + révélation ===== -->
-<section id="forest">
-  <div class="forest-pin">
-    <div class="bg f3"></div>
-    <div class="bg f2"></div>
-    <div class="bg f1"></div>
-    <div class="stage">
-      <div class="orbe-wrap">
-        <div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div>
-      </div>
-      <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
-      <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
-      <p class="txt txt-final">
-        <span class="small">Le compte à rebours est lancé !</span>
-        <span class="big">Soyez prêts !</span>
-      </p>
-    </div>
-    <button class="replay" type="button">Recommencer</button>
+  <div class="forest-stage">
+    <div class="orbe-wrap"><div class="orbe-spin"><img src="IMG/ORBES.png" alt="" draggable="false"></div></div>
+    <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
+    <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
+    <p class="txt txt-final">
+      <span class="small">Le compte à rebours est lancé !</span>
+      <span class="big">Soyez prêts !</span>
+    </p>
   </div>
-</section>
+
+  <button class="replay" type="button">Recommencer</button>
+</main>
+
+<div class="scroll-driver" aria-hidden="true"></div>
 
 <script>
 (function () {
@@ -310,17 +298,23 @@
 
 
   /* ============================================================
-     2. SCROLL : parallax d'arrivée puis décor figé
+     2. SCROLL : descente (parallaxe d'arrivée) puis décor figé
      ============================================================ */
-  const skyCiel    = document.querySelector('.sky-ciel');
-  const skyNuages  = document.querySelector('.sky-nuages');
-  const skyContent = document.querySelector('.sky-content');
-  const forest     = document.getElementById('forest');
+  const ciel    = document.querySelector('.ciel');
+  const nuages  = document.querySelector('.nuages');
   const f1 = document.querySelector('.f1');
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
+  const skyContent = document.querySelector('.sky-content');
 
-  let forestProgress = 0;   // 0 = on entre, 1 = forêt figée (bas de page)
+  // Distance d'arrivée par couche : f1 (devant) parcourt le plus de chemin,
+  // f3 (fond) le moins -> profondeur / parallaxe.
+  const OFFSET_F1 = 2.70;
+  const OFFSET_F2 = 2.30;
+  const OFFSET_F3 = 2.00;
+  const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
+
+  let arrive = 0;          // 0 = en haut (ciel), 1 = forêt posée
   let revealActive = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -329,24 +323,26 @@
   function onScroll() { if (!ticking) { requestAnimationFrame(updateScroll); ticking = true; } }
 
   function updateScroll() {
-    const sy = window.scrollY || window.pageYOffset;
     const vh = window.innerHeight;
+    const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
+    const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
+    arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
-    // Ciel : léger parallax (l'écran du haut s'éloigne plus lentement)
-    skyCiel.style.transform   = 'translateY(' + (sy * 0.35).toFixed(1) + 'px) scale(1.05)';
-    skyNuages.style.transform = 'translateY(' + (sy * 0.55).toFixed(1) + 'px)';
-    skyContent.style.transform = 'translateY(' + (sy * 0.25).toFixed(1) + 'px)';
-    skyContent.style.opacity = clamp(1 - sy / (vh * 0.7), 0, 1).toFixed(3);
+    // Ciel : léger drift vers le haut
+    ciel.style.transform = 'translateY(' + (-arrive * vh * 0.06).toFixed(1) + 'px) scale(1.05)';
 
-    // Forêt : arrivée en parallax (calques montent à des vitesses différentes)
-    // jusqu'à forestProgress ~0.5, puis FIGÉE.
-    const forRun = forest.offsetHeight - vh;
-    forestProgress = clamp((sy - forest.offsetTop) / (forRun || 1), 0, 1);
-    const enter = clamp(forestProgress / 0.5, 0, 1);     // 0 -> 1 sur la 1re moitié
-    const settle = 1 - enter;                            // 1 -> 0
-    f3.style.transform = 'translateY(' + (settle * vh * 0.10).toFixed(1) + 'px) scale(1.04)';
-    f2.style.transform = 'translateY(' + (settle * vh * 0.22).toFixed(1) + 'px) scale(1.04)';
-    f1.style.transform = 'translateY(' + (settle * vh * 0.38).toFixed(1) + 'px) scale(1.04)';
+    // Nuage : pleine largeur en bas, s'efface en montant un peu
+    nuages.style.transform = 'translateY(' + (-arrive * vh * 0.28).toFixed(1) + 'px)';
+    nuages.style.opacity = clamp(1 - arrive * 1.4, 0, 1).toFixed(3);
+
+    // Contenu ciel : fond en fondu pendant la descente
+    skyContent.style.transform = 'translateY(' + (-arrive * vh * 0.08).toFixed(1) + 'px)';
+    skyContent.style.opacity = clamp(1 - arrive * 1.5, 0, 1).toFixed(3);
+
+    // Forêt : remonte du bas, vitesses différentes -> profondeur
+    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F3).toFixed(1) + 'px)';
+    f2.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F2).toFixed(1) + 'px)';
+    f1.style.transform = 'translateY(' + ((1 - arrive) * vh * OFFSET_F1).toFixed(1) + 'px)';
 
     ticking = false;
   }
@@ -355,29 +351,35 @@
 
 
   /* ============================================================
-     3. RÉVÉLATION : clic maintenu -> orbe grossit, 3 textes défilent
+     3. RÉVÉLATION : clic maintenu -> orbe grossit, 3 textes, flou
      ============================================================ */
+  const bgwrap    = document.querySelector('.bgwrap');
+  const veil      = document.querySelector('.veil');
   const orbeWrap  = document.querySelector('.orbe-wrap');
   const txtPrompt = document.querySelector('.txt-prompt');
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
   const replay    = document.querySelector('.replay');
 
-  let charge = 0;          // 0..1
+  let charge = 0;
   let completed = false;
-  const CHARGE_UP = 0.009;   // ~1.85 s pour remplir
+  const CHARGE_UP = 0.009;
   const CHARGE_DOWN = 0.02;
+  const MAX_BLUR = 14;     // px de flou à pleine charge
 
   replay.addEventListener('click', function () {
     completed = false; charge = 0;
     replay.classList.remove('show');
+    bgwrap.style.filter = 'none';
+    txtFinal.style.transition = 'none';
+    txtDate.style.transition = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   function reveal() {
-    // Forêt « arrivée » : l'orbe apparaît quand le décor se pose
-    const climax = clamp((forestProgress - 0.32) / 0.18, 0, 1);
-    revealActive = forestProgress > 0.5 && !completed;
+    // L'orbe apparaît quand la forêt se pose
+    const orbeIn = clamp((arrive - 0.55) / 0.45, 0, 1);
+    revealActive = arrive > 0.98 && !completed;
 
     if (revealActive && pressed) {
       charge = clamp(charge + CHARGE_UP, 0, 1);
@@ -385,31 +387,32 @@
       charge = clamp(charge - CHARGE_DOWN, 0, 1);
     }
 
-    // Orbe : visible à l'arrivée, GROSSIT fortement avec la charge (~ sort de l'écran)
-    orbeWrap.style.opacity = (0.30 + climax * 0.70).toFixed(3);
-    orbeWrap.style.transform = 'scale(' + (0.82 + climax * 0.10 + charge * 1.7).toFixed(3) + ')';
+    // Flou des décors + voile bleu, pilotés par la charge
+    bgwrap.style.filter = charge > 0.001 ? 'blur(' + (charge * MAX_BLUR).toFixed(2) + 'px)' : 'none';
+    veil.style.opacity = (charge * 0.55).toFixed(3);
+
+    // Orbe : visible à l'arrivée, GROSSIT fortement (~ sort de l'écran)
+    orbeWrap.style.opacity = orbeIn.toFixed(3);
+    orbeWrap.style.transform = 'scale(' + (0.82 + charge * 1.7).toFixed(3) + ')';
 
     if (!completed) {
-      // 1) prompt -> 2) date : défilement vertical + cross-fade piloté par la charge
-      const pOut = clamp(charge / 0.22, 0, 1);            // prompt s'efface
-      txtPrompt.style.opacity = (climax * (1 - pOut)).toFixed(3);
+      const pOut = clamp(charge / 0.22, 0, 1);
+      txtPrompt.style.opacity = (orbeIn * (1 - pOut)).toFixed(3);
       txtPrompt.style.transform = 'translateY(' + (pOut * -28).toFixed(1) + 'px)';
 
-      const dIn = clamp((charge - 0.18) / 0.5, 0, 1);     // date entre
+      const dIn = clamp((charge - 0.18) / 0.5, 0, 1);
       txtDate.style.opacity = dIn.toFixed(3);
-      txtDate.style.transform = 'translateY(' + ((1 - dIn) * 28).toFixed(1) + 'px) scale(' + (0.8 + dIn * 0.2).toFixed(3) + ')';
+      txtDate.style.transform = 'translateY(' + ((1 - dIn) * 30).toFixed(1) + 'px) scale(' + (0.82 + dIn * 0.18).toFixed(3) + ')';
 
       txtFinal.style.opacity = '0';
     }
 
     if (charge >= 1 && !completed) {
-      completed = true;
-      revealActive = false;
-      // 3) message final, dans la forêt
+      completed = true; revealActive = false;
       txtPrompt.style.opacity = '0';
       txtDate.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
       txtDate.style.opacity = '0';
-      txtDate.style.transform = 'translateY(-28px) scale(1.05)';
+      txtDate.style.transform = 'translateY(-30px) scale(1.06)';
       txtFinal.style.transition = 'opacity 1s ease 0.35s, transform 1s ease 0.35s';
       txtFinal.style.opacity = '1';
       txtFinal.style.transform = 'translateY(0)';
