@@ -84,6 +84,13 @@
     background-image: image-set(url('IMG/Ciel.webp') type('image/webp'), url('IMG/Ciel.png') type('image/png'));
     background-size: cover; background-position: center top; z-index: 1;
   }
+  /* Fondu bas du ciel vers le noir → transition douce vers la forêt */
+  .ciel::after {
+    content: ''; position: absolute; inset: auto 0 0 0;
+    height: 38%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(4,6,15,0.85) 100%);
+    pointer-events: none;
+  }
   /* Nuage : calque PLEIN (non rogné), l'alpha haut/bas du PNG gère les bords */
   .nuages {
     background-image: url('IMG/Nuages.png');
@@ -178,15 +185,26 @@
   .txt-date { font-size: clamp(2.4rem, 6.5vw, 4.5rem); }
   .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.2em; letter-spacing: 0.08em; }
 
-  /* Lettres magiques : chaque .ltr apparaît via @keyframes ltrReveal */
+  /* Lettres magiques : chaque .ltr apparaît / disparaît */
   .txt-date .ltr { display: inline-block; opacity: 0; }
   .txt-date .ltr.on {
-    animation: ltrReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: calc(var(--i) * 40ms);
+    animation: ltrReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: calc(var(--i) * 38ms);
+  }
+  .txt-date .ltr.off {
+    animation: ltrHide 0.28s ease-in forwards;
+    animation-delay: calc(var(--i) * 12ms);
   }
   @keyframes ltrReveal {
-    from { opacity: 0; filter: blur(12px); transform: translateY(6px); }
-    to   { opacity: 1; filter: blur(0px);  transform: translateY(0);   }
+    0%  { opacity: 0; filter: blur(13px); transform: translateY(12px) rotate(calc(sin(var(--i) * 89deg) * 7deg)); }
+    30% { opacity: 1; filter: blur(3px);  transform: translateY(-6px)  rotate(calc(cos(var(--i) * 89deg) * 5deg)); }
+    58% { filter: blur(0.5px);            transform: translateY(3px)   rotate(calc(sin(var(--i) * 89deg) * -2deg)); }
+    80% {                                 transform: translateY(-1px)  rotate(calc(cos(var(--i) * 89deg) * 1deg)); }
+    100%{ opacity: 1; filter: blur(0px);  transform: translateY(0)     rotate(0deg); }
+  }
+  @keyframes ltrHide {
+    0%  { opacity: 1; filter: blur(0px);  transform: translateY(0); }
+    100%{ opacity: 0; filter: blur(11px); transform: translateY(10px) rotate(calc(sin(var(--i) * 89deg) * 5deg)); }
   }
 
   /* "Le compte à rebours..." : petit texte en bas, à la place du bouton */
@@ -208,20 +226,6 @@
   }
   .trans-text h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
 
-  .replay {
-    position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%);
-    z-index: 12;
-    font-family: 'Wulkan Display', Georgia, serif;
-    background: transparent; color: var(--gold);
-    border: 1px solid var(--gold); border-radius: 999px;
-    padding: 0.7rem 2.2rem;
-    font-size: 0.9rem; letter-spacing: 0.2em; text-transform: uppercase;
-    cursor: pointer; pointer-events: auto;
-    opacity: 0; visibility: hidden;
-    transition: opacity 0.8s ease, background 0.35s ease, color 0.35s ease;
-  }
-  .replay.show { opacity: 1; visibility: visible; }
-  .replay:hover { background: var(--gold); color: var(--bg-deep); }
 
   /* ============ Barre de progression (clic maintenu) ============ */
   #charge-bar {
@@ -268,7 +272,7 @@
     </p>
   </div>
 
-  <button class="replay" type="button">Recommencer</button>
+
 </main>
 
 <div class="scroll-driver" aria-hidden="true"></div>
@@ -435,20 +439,28 @@
     // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
 
-    // Texte de transition "à un nouveau / rendez-vous"
+    // Texte de transition "à un nouveau / rendez-vous" : monte depuis le bas
     const ttIn  = clamp((arrive - 0.15) / 0.20, 0, 1);
     const ttOut = clamp((arrive - 0.60) / 0.15, 0, 1);
     const ttAlpha = ttIn * (1 - ttOut);
+    const ttY = (1 - ttIn) * vh * 0.50 - ttOut * vh * 0.18;
     transText.style.opacity = ttAlpha.toFixed(3);
-    transText.style.transform = 'translateY(' + (((1 - ttIn) * 30) + (ttOut * -30)).toFixed(1) + 'px)';
+    transText.style.transform = 'translateY(' + ttY.toFixed(1) + 'px)';
 
-    // Forêt : parallaxe exagéré + panning background de cimes (0%) vers sol (100%)
+    // Forêt : parallaxe exagéré
     f3.style.transform = 'translateY(' + ((1 - arrive) * vh * 1.4).toFixed(1) + 'px)';
     f2.style.transform = 'translateY(' + ((1 - arrive) * vh * 2.1).toFixed(1) + 'px)';
     f1.style.transform = 'translateY(' + ((1 - arrive) * vh * 3.0).toFixed(1) + 'px)';
-    f3.style.backgroundPosition = 'center ' + (arrive * 60).toFixed(1) + '%';
-    f2.style.backgroundPosition = 'center ' + (arrive * 85).toFixed(1) + '%';
-    f1.style.backgroundPosition = 'center ' + Math.min(100, arrive * 115).toFixed(1) + '%';
+
+    // Background-position : remappé sur la fenêtre de visibilité de chaque couche
+    // (la couche entre à l'écran quand translateY < vh, soit arrive > 1 - 1/factor)
+    // f3 entre quand arrive > 0.29, f2 > 0.52, f1 > 0.67
+    const f3Vis = clamp((arrive - 0.29) / 0.71, 0, 1);
+    const f2Vis = clamp((arrive - 0.52) / 0.48, 0, 1);
+    const f1Vis = clamp((arrive - 0.67) / 0.33, 0, 1);
+    f3.style.backgroundPosition = 'center ' + (f3Vis * 65).toFixed(1) + '%';
+    f2.style.backgroundPosition = 'center ' + (f2Vis * 80).toFixed(1) + '%';
+    f1.style.backgroundPosition = 'center ' + (f1Vis * 100).toFixed(1) + '%';
 
     ticking = false;
   }
@@ -465,7 +477,6 @@
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
   const transText = document.querySelector('.trans-text');
-  const replay    = document.querySelector('.replay');
   const chargeBar = document.getElementById('charge-bar');
 
   /* Découpe chaque caractère non-espace en <span class="ltr" style="--i:N"> */
@@ -504,24 +515,6 @@
   const CHARGE_DOWN = 0.02;
   const MAX_BLUR = 14;
 
-  replay.addEventListener('click', function () {
-    completed = false; charge = 0; barVisible = false;
-    forestSettled = false; returningToTop = true; clearTimeout(autoScrollTimer);
-    dateLettersRevealed = false;
-    txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); });
-    txtDate.style.transition = 'none';
-    txtDate.style.opacity = '0';
-    txtDate.style.transform = '';
-    chargeBar.style.transition = 'none';
-    chargeBar.style.opacity = '0';
-    chargeBar.style.width = '0%';
-    replay.classList.remove('show');
-    bgwrap.style.filter = 'none';
-    txtFinal.style.transition = 'none';
-    txtFinal.style.opacity = '0';
-    txtFinal.style.transform = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
 
 
   /* ============================================================
@@ -616,21 +609,38 @@
     bgwrap.style.filter = charge > 0.001 ? 'blur(' + (charge * MAX_BLUR).toFixed(2) + 'px)' : 'none';
     veil.style.opacity = (charge * 0.55).toFixed(3);
 
-    // Orbe : visible à l'arrivée, GROSSIT fortement (~ sort de l'écran)
+    // Orbe + prompt : arrivent du bas avec la forêt
+    const orbeRise = (1 - orbeIn) * window.innerHeight * 0.70;
     orbeWrap.style.opacity = orbeIn.toFixed(3);
-    orbeWrap.style.transform = 'scale(' + (0.82 + charge * 1.7).toFixed(3) + ')';
+    orbeWrap.style.transform = 'translateY(' + orbeRise.toFixed(1) + 'px) scale(' + (0.82 + charge * 1.7).toFixed(3) + ')';
 
     if (!completed) {
       const pOut = clamp(charge / 0.22, 0, 1);
       txtPrompt.style.opacity = (orbeIn * (1 - pOut)).toFixed(3);
-      txtPrompt.style.transform = 'translateY(' + (pOut * -28).toFixed(1) + 'px)';
+      txtPrompt.style.transform = 'translateY(' + (orbeRise + pOut * -28).toFixed(1) + 'px)';
 
-      // Révélation lettre par lettre à partir de charge = 0.18 (déclenchement unique)
+      // Révélation lettre par lettre à charge ≥ 0.18
       if (charge >= 0.18 && !dateLettersRevealed) {
         dateLettersRevealed = true;
-        txtDate.style.transition = 'none';
         txtDate.style.opacity = '1';
-        txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.add('on'); });
+        txtDate.querySelectorAll('.ltr').forEach(function (s) {
+          s.classList.remove('off');
+          s.classList.add('on');
+        });
+      }
+      // Disparition si on relâche avant la fin (hysteresis à 0.10)
+      if (charge < 0.10 && dateLettersRevealed) {
+        dateLettersRevealed = false;
+        txtDate.querySelectorAll('.ltr').forEach(function (s) {
+          s.classList.remove('on');
+          s.classList.add('off');
+        });
+        setTimeout(function () {
+          if (!dateLettersRevealed) {
+            txtDate.style.opacity = '0';
+            txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('off'); });
+          }
+        }, 380);
       }
 
       txtFinal.style.opacity = '0';
@@ -654,10 +664,9 @@
     if (charge >= 1 && !completed) {
       completed = true; revealActive = false;
       txtPrompt.style.opacity = '0';
-      // txtDate reste visible et fixe (pas de fadeout)
+      // txtDate reste visible et fixe
       txtFinal.style.transition = 'opacity 1s ease 0.35s';
       txtFinal.style.opacity = '1';
-      replay.classList.add('show');
     }
   }
 
