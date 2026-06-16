@@ -90,29 +90,31 @@
     background-image: image-set(url('IMG/Nuages.webp') type('image/webp'), url('IMG/Nuages.png') type('image/png'));
     background-size: 100% auto; background-position: center top; z-index: 2;
   }
-  /* Forêt : pleine largeur, position-Y gérée par JS (parallaxe cimes→sol) */
-  .foret { background-size: 100% auto; background-position: center 0%; }
+  /* Forêt : image entière, pleine largeur, ANCRÉE EN BAS du viewport.
+     L'élément prend la hauteur native de l'image (plus haute que l'écran) ;
+     la montée se fait par translateY -> on traverse cime→sol au scroll.
+     PNG transparents en haut (silhouette de cimes) -> aucune coupure. */
+  .foret {
+    inset: auto 0 0 0;
+    height: auto;
+    aspect-ratio: 1920 / 2383;
+    background-size: 100% auto;
+    background-position: center bottom;
+  }
   .f3 {
     background-image: url('IMG/foret-3.png');
     background-image: image-set(url('IMG/foret-3.webp') type('image/webp'), url('IMG/foret-3.png') type('image/png'));
     z-index: 3;
-    /* Fondu très fin en haut : lisse le bord de la couche sans couper les cimes */
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   .f2 {
     background-image: url('IMG/foret-2.png');
     background-image: image-set(url('IMG/foret-2.webp') type('image/webp'), url('IMG/foret-2.png') type('image/png'));
     z-index: 4;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   .f1 {
     background-image: url('IMG/foret-1.png');
     background-image: image-set(url('IMG/foret-1.webp') type('image/webp'), url('IMG/foret-1.png') type('image/png'));
     z-index: 5;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   /* Voile bleu qui monte avec le clic maintenu (effet "Soyez prêts") */
   .veil {
@@ -455,23 +457,14 @@
     transText.style.opacity = ttAlpha.toFixed(3);
     transText.style.transform = 'translateY(' + ttY.toFixed(1) + 'px)';
 
-    // Forêt : parallaxe exagéré
-    f3.style.transform = 'translateY(' + ((1 - arrive) * vh * 1.4).toFixed(1) + 'px)';
-    f2.style.transform = 'translateY(' + ((1 - arrive) * vh * 2.1).toFixed(1) + 'px)';
-    f1.style.transform = 'translateY(' + ((1 - arrive) * vh * 3.0).toFixed(1) + 'px)';
-
-    // Background-position : remappé sur la fenêtre de visibilité de chaque couche
-    // (la couche entre à l'écran quand translateY < vh, soit arrive > 1 - 1/factor)
-    // f3 entre quand arrive > 0.29, f2 > 0.52, f1 > 0.67
-    // Pan de la cime (0%) vers le sol (100%) sur la fenêtre de visibilité de
-    // chaque couche. ARRIVE À 100% AU REPOS → le sol est ancré en bas de l'écran,
-    // quelle que soit la largeur (l'image portrait est plus haute que le viewport).
-    const f3Vis = clamp((arrive - 0.29) / 0.71, 0, 1);
-    const f2Vis = clamp((arrive - 0.52) / 0.48, 0, 1);
-    const f1Vis = clamp((arrive - 0.67) / 0.33, 0, 1);
-    f3.style.backgroundPosition = 'center ' + (f3Vis * 100).toFixed(1) + '%';
-    f2.style.backgroundPosition = 'center ' + (f2Vis * 100).toFixed(1) + '%';
-    f1.style.backgroundPosition = 'center ' + (f1Vis * 100).toFixed(1) + '%';
+    // Forêt : chaque couche = image entière ancrée en bas, montée par translateY.
+    // fh = hauteur rendue de l'image (pleine largeur). Travel ≥ fh → couche
+    // totalement hors écran (bas) à arrive=0 ; à arrive=1 → 0 (sol ancré en bas).
+    // Travels différenciés → parallaxe (le 1er plan se déplace le plus).
+    const fh = window.innerWidth * 2383 / 1920;
+    f3.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.00).toFixed(1) + 'px)';
+    f2.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.15).toFixed(1) + 'px)';
+    f1.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.32).toFixed(1) + 'px)';
 
     ticking = false;
   }
