@@ -449,13 +449,11 @@
     // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
 
-    // Texte de transition "à un nouveau / rendez-vous" : monte depuis le bas
-    const ttIn  = clamp((arrive - 0.15) / 0.20, 0, 1);
-    const ttOut = clamp((arrive - 0.60) / 0.15, 0, 1);
-    const ttAlpha = ttIn * (1 - ttOut);
-    const ttY = (1 - ttIn) * vh * 0.50 - ttOut * vh * 0.18;
-    transText.style.opacity = ttAlpha.toFixed(3);
-    transText.style.transform = 'translateY(' + ttY.toFixed(1) + 'px)';
+    // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
+    // en scrollant, puis il remonte naturellement (passage unique, défilement
+    // linéaire). Hors écran aux extrêmes -> pas besoin de fondu d'opacité.
+    transText.style.opacity = '1';
+    transText.style.transform = 'translateY(' + ((0.9 - arrive * 1.95) * vh).toFixed(1) + 'px)';
 
     // Forêt : chaque couche = image entière ancrée en bas, montée par translateY.
     // fh = hauteur rendue de l'image (pleine largeur). Travel ≥ fh → couche
