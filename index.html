@@ -290,8 +290,8 @@
   resizeCanvas();
 
   // size 1.5 = poussière fine (vs 3 = grosses paillettes)
-  const PARAMS = { density: 3, size: 1.5, speed: 1.2, decay: 0.008, gravity: 0.04, wiggle: 2, halo: 0, step: 5 };
-  const MAX_PARTICLES = 160; // plafond dur — garantit 60fps même sur machines lentes
+  const PARAMS = { density: 5, size: 1.5, speed: 1.2, decay: 0.007, gravity: 0.04, wiggle: 2, halo: 0, step: 4 };
+  const MAX_PARTICLES = 400; // filet de sécurité anti-emballement, pas une limite active
   const COLORS = ['#ffd700','#ffed4a','#fff0a0','#f5c518','#ffe680','#ffc200','#fffbe6','#ffffff'];
   const particles = [];
 
