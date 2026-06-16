@@ -84,13 +84,6 @@
     background-image: image-set(url('IMG/Ciel.webp') type('image/webp'), url('IMG/Ciel.png') type('image/png'));
     background-size: cover; background-position: center top; z-index: 1;
   }
-  /* Fondu bas du ciel vers le noir → transition douce vers la forêt */
-  .ciel::after {
-    content: ''; position: absolute; inset: auto 0 0 0;
-    height: 38%;
-    background: linear-gradient(to bottom, transparent 0%, rgba(4,6,15,0.85) 100%);
-    pointer-events: none;
-  }
   /* Nuage : calque PLEIN (non rogné), l'alpha haut/bas du PNG gère les bords */
   .nuages {
     background-image: url('IMG/Nuages.png');
@@ -103,6 +96,9 @@
     background-image: url('IMG/foret-3.png');
     background-image: image-set(url('IMG/foret-3.webp') type('image/webp'), url('IMG/foret-3.png') type('image/png'));
     z-index: 3;
+    /* Fondu très fin en haut : lisse le bord de la couche sans couper les cimes */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
   }
   .f2 {
     background-image: url('IMG/foret-2.png');
@@ -185,26 +181,34 @@
   .txt-date { font-size: clamp(2.4rem, 6.5vw, 4.5rem); }
   .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.2em; letter-spacing: 0.08em; }
 
-  /* Lettres magiques : chaque .ltr apparaît / disparaît */
+  /* Lettres magiques : apparition avec dance, disparition par fondu du conteneur */
   .txt-date .ltr { display: inline-block; opacity: 0; }
   .txt-date .ltr.on {
-    animation: ltrReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: ltrReveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     animation-delay: calc(var(--i) * 38ms);
   }
-  .txt-date .ltr.off {
-    animation: ltrHide 0.28s ease-in forwards;
-    animation-delay: calc(var(--i) * 12ms);
-  }
   @keyframes ltrReveal {
-    0%  { opacity: 0; filter: blur(13px); transform: translateY(12px) rotate(calc(sin(var(--i) * 89deg) * 7deg)); }
-    30% { opacity: 1; filter: blur(3px);  transform: translateY(-6px)  rotate(calc(cos(var(--i) * 89deg) * 5deg)); }
-    58% { filter: blur(0.5px);            transform: translateY(3px)   rotate(calc(sin(var(--i) * 89deg) * -2deg)); }
-    80% {                                 transform: translateY(-1px)  rotate(calc(cos(var(--i) * 89deg) * 1deg)); }
-    100%{ opacity: 1; filter: blur(0px);  transform: translateY(0)     rotate(0deg); }
-  }
-  @keyframes ltrHide {
-    0%  { opacity: 1; filter: blur(0px);  transform: translateY(0); }
-    100%{ opacity: 0; filter: blur(11px); transform: translateY(10px) rotate(calc(sin(var(--i) * 89deg) * 5deg)); }
+    0%  { opacity: 0; filter: blur(16px);
+          transform: translateY(calc(sin(var(--i) * 89deg) * 22px + 18px))
+                     translateX(calc(cos(var(--i) * 137deg) * 14px))
+                     rotate(calc(sin(var(--i) * 233deg) * 20deg))
+                     scale(0.65); }
+    25% { opacity: 0.9; filter: blur(5px);
+          transform: translateY(calc(sin(var(--i) * 89deg) * -9px - 7px))
+                     translateX(calc(cos(var(--i) * 137deg) * -6px))
+                     rotate(calc(sin(var(--i) * 233deg) * -9deg))
+                     scale(1.08); }
+    52% { filter: blur(1px);
+          transform: translateY(calc(sin(var(--i) * 89deg) * 5px))
+                     translateX(calc(cos(var(--i) * 137deg) * 3px))
+                     rotate(calc(sin(var(--i) * 233deg) * 4deg))
+                     scale(0.96); }
+    76% { transform: translateY(calc(sin(var(--i) * 89deg) * -2px))
+                     translateX(0px)
+                     rotate(calc(sin(var(--i) * 233deg) * -1deg))
+                     scale(1.01); }
+    100%{ opacity: 1; filter: blur(0px);
+          transform: translateY(0) translateX(0) rotate(0deg) scale(1); }
   }
 
   /* "Le compte à rebours..." : petit texte en bas, à la place du bouton */
@@ -455,12 +459,14 @@
     // Background-position : remappé sur la fenêtre de visibilité de chaque couche
     // (la couche entre à l'écran quand translateY < vh, soit arrive > 1 - 1/factor)
     // f3 entre quand arrive > 0.29, f2 > 0.52, f1 > 0.67
+    // Remap bgPos sur la fenêtre de visibilité (arrive où la couche entre à l'écran)
+    // Max réduit pour que la scène posée montre canopée+troncs sur grand écran
     const f3Vis = clamp((arrive - 0.29) / 0.71, 0, 1);
     const f2Vis = clamp((arrive - 0.52) / 0.48, 0, 1);
     const f1Vis = clamp((arrive - 0.67) / 0.33, 0, 1);
-    f3.style.backgroundPosition = 'center ' + (f3Vis * 65).toFixed(1) + '%';
-    f2.style.backgroundPosition = 'center ' + (f2Vis * 80).toFixed(1) + '%';
-    f1.style.backgroundPosition = 'center ' + (f1Vis * 100).toFixed(1) + '%';
+    f3.style.backgroundPosition = 'center ' + (f3Vis * 38).toFixed(1) + '%';
+    f2.style.backgroundPosition = 'center ' + (f2Vis * 55).toFixed(1) + '%';
+    f1.style.backgroundPosition = 'center ' + (f1Vis * 72).toFixed(1) + '%';
 
     ticking = false;
   }
@@ -510,7 +516,8 @@
   let charge = 0;
   let completed = false;
   let barVisible = false;
-  let dateLettersRevealed = false;
+  let ltrState = 'hidden'; // 'hidden' | 'showing' | 'visible'
+  let ltrTimer  = null;
   const CHARGE_UP = 0.009;
   const CHARGE_DOWN = 0.02;
   const MAX_BLUR = 14;
@@ -619,28 +626,31 @@
       txtPrompt.style.opacity = (orbeIn * (1 - pOut)).toFixed(3);
       txtPrompt.style.transform = 'translateY(' + (orbeRise + pOut * -28).toFixed(1) + 'px)';
 
-      // Révélation lettre par lettre à charge ≥ 0.18
-      if (charge >= 0.18 && !dateLettersRevealed) {
-        dateLettersRevealed = true;
+      // Révélation lettres (charge monte ≥ 0.18)
+      if (charge >= 0.18 && ltrState === 'hidden') {
+        ltrState = 'showing';
+        clearTimeout(ltrTimer);
+        txtDate.style.transition = '';
         txtDate.style.opacity = '1';
-        txtDate.querySelectorAll('.ltr').forEach(function (s) {
-          s.classList.remove('off');
-          s.classList.add('on');
-        });
+        const ltrs = txtDate.querySelectorAll('.ltr');
+        ltrs.forEach(function (s) { s.classList.remove('on'); });
+        void txtDate.offsetWidth; // force reflow → redémarre l'animation
+        ltrs.forEach(function (s) { s.classList.add('on'); });
+        // Marquer comme entièrement visible après le dernier stagger
+        ltrTimer = setTimeout(function () {
+          if (ltrState === 'showing') ltrState = 'visible';
+        }, (ltrs.length - 1) * 38 + 750);
       }
-      // Disparition si on relâche avant la fin (hysteresis à 0.10)
-      if (charge < 0.10 && dateLettersRevealed) {
-        dateLettersRevealed = false;
-        txtDate.querySelectorAll('.ltr').forEach(function (s) {
-          s.classList.remove('on');
-          s.classList.add('off');
-        });
-        setTimeout(function () {
-          if (!dateLettersRevealed) {
-            txtDate.style.opacity = '0';
-            txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('off'); });
-          }
-        }, 380);
+      // Disparition si relâché (charge < 0.10) : fondu du conteneur, sans flash
+      if (charge < 0.10 && (ltrState === 'showing' || ltrState === 'visible')) {
+        ltrState = 'hidden';
+        clearTimeout(ltrTimer);
+        txtDate.style.transition = 'opacity 0.35s ease-out';
+        txtDate.style.opacity = '0';
+        ltrTimer = setTimeout(function () {
+          txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); });
+          txtDate.style.transition = '';
+        }, 400);
       }
 
       txtFinal.style.opacity = '0';
