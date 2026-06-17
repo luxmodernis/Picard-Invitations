@@ -173,10 +173,20 @@
     width: clamp(165px, 17.5vw, 232px);
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
+    pointer-events: auto; cursor: pointer;   /* V2 : badge cliquable */
   }
   /* Mobile : badge +20 % */
   @media (hover: none) and (pointer: coarse) {
     .scroll-badge { width: clamp(198px, 21vw, 278px); }
+  }
+  /* Phrase d'invite en bas du ciel (fond comme "le compte à rebours…") */
+  .draw-hint {
+    position: absolute; left: 0; right: 0; bottom: 5.5vh; z-index: 12;
+    text-align: center; pointer-events: none;
+    font-size: clamp(0.9rem, 2.4vw, 1.3rem);
+    color: var(--gold-soft); line-height: 1.5;
+    text-shadow: 0 0 18px rgba(201, 168, 76, 0.5);
+    will-change: opacity;
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
@@ -217,9 +227,9 @@
   .txt-date {
     font-family: '4 Privet Drive', 'Wulkan Display', Georgia, serif;
     font-size: clamp(1.52rem, 6.4vw, 2.72rem);   /* -20 % */
-    text-transform: uppercase;            /* message révélé tout en capitales */
+    text-transform: uppercase;            /* V2 : message révélé tout en capitales */
     color: #fff3d6;                       /* cœur clair chaud */
-    /* Halo lumineux doré -> orangé (effet "incandescent") */
+    /* Halo lumineux doré -> orangé (effet "incandescent" de la capture) */
     text-shadow:
       0 0 6px rgba(255, 240, 200, 0.95),
       0 0 14px rgba(255, 203, 110, 0.9),
@@ -282,6 +292,15 @@
   }
   .trans-text h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
 
+  /* V3 : "Picard vous invite" — même style que la transition, monte du bas */
+  .invite-beat {
+    position: absolute; inset: 0; z-index: 10;
+    display: grid; place-items: center;
+    text-align: center; pointer-events: none;
+    will-change: transform;
+  }
+  .invite-beat h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
+
 
   /* ============ Barre de progression (clic maintenu) ============ */
   #charge-bar {
@@ -297,9 +316,9 @@
 
 <!-- Barre de bascule V1/V2 (TEMPORAIRE — à retirer une fois une version validée) -->
 <nav id="version-switch" aria-label="Choix de version">
-  <a href="./" class="vs-btn vs-active">V1</a>
+  <a href="./" class="vs-btn">V1</a>
   <a href="./v2.html" class="vs-btn">V2</a>
-  <a href="./v3.html" class="vs-btn">V3</a>
+  <a href="./v3.html" class="vs-btn vs-active">V3</a>
 </nav>
 
 <canvas id="particles"></canvas>
@@ -316,10 +335,17 @@
     <canvas id="ff-canvas"></canvas>
   </div>
 
+  <!-- V3 : accueil = logo + badge uniquement (pas de "vous invite" fixe) -->
   <div class="sky-content">
     <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
-    <h1 class="invite-line">vous invite</h1>
-    <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
+    <img id="cliquez-badge" class="scroll-badge" src="IMG/cliquez.png" alt="Cliquez pour commencer l'aventure" draggable="false">
+  </div>
+
+  <p class="draw-hint">Dessinez sur l'écran<br>pour révéler votre magie</p>
+
+  <!-- V3 : 1er temps au scroll -> "Picard vous invite" monte du bas -->
+  <div class="invite-beat">
+    <h2>Picard<br>vous invite</h2>
   </div>
 
   <div class="trans-text">
@@ -429,11 +455,10 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // Particules au touch PARTOUT (toutes les phases). On ne bloque le scroll
-  // (preventDefault sur touchmove) que pendant la scène de révélation. On ne
-  // touche jamais au touchstart (sinon les taps sur la barre V1/V2/V3 sont
-  // avalés) et on ignore les éléments interactifs.
-  function lockScroll() { return arrive > 0.98; }
+  // V2 — MOBILE : ciel figé, la descente est pilotée par le clic sur le badge.
+  // On bloque le touchmove (défilement) mais jamais le touchstart (sinon les taps
+  // sur la barre V1/V2/V3 + badge sont avalés). DESKTOP (hasHover) : on ne bloque
+  // rien -> scroll libre identique à V1.
   function isInteractive(t) { return t && t.closest && t.closest('#version-switch, .scroll-badge'); }
   window.addEventListener('touchstart', function (e) {
     if (isInteractive(e.target)) return;
@@ -444,7 +469,7 @@
     if (isInteractive(e.target)) return;
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
-    if (lockScroll()) e.preventDefault();
+    if (!hasHover) e.preventDefault();   // verrou de scroll : mobile uniquement
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
 
@@ -458,6 +483,7 @@
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
+  const drawHint   = document.querySelector('.draw-hint');
 
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
@@ -466,6 +492,8 @@
   let forestSettled = false;
   let autoScrollTimer = null;
   let returningToTop = false;  // empêche l'auto-scroll pendant le retour "Recommencer"
+  let autoPlaying = false;     // V2 : descente automatique en cours (clic sur le badge)
+  let v2Progress = 0;          // V2 : progression 0->1 pilotée par l'auto-scroll (pas le scroll réel)
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -475,21 +503,25 @@
   function updateScroll() {
     const vh = window.innerHeight;
     const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
-    const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
+    // DESKTOP : scroll réel (comme V1). MOBILE : progression virtuelle (auto-scroll).
+    const p = hasHover
+      ? clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1)
+      : clamp(v2Progress, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
     // Retour "Recommencer" terminé dès qu'on est près du haut
     if (p < 0.02) returningToTop = false;
 
-    // Dès que la forêt est posée, scroll auto jusqu'en bas : supprime le scroll
-    // résiduel (28 % de hauteur) et empêche la "danse" sur mobile.
-    // Bloqué pendant le retour au haut (returningToTop) pour éviter le conflit.
+    // Desktop : rattrape le scroll résiduel (28 %) une fois la forêt posée, comme V1.
+    // Mobile : pas de scroll réel, rien à rattraper.
     if (arrive >= 1 && !forestSettled && !returningToTop) {
       forestSettled = true;
-      clearTimeout(autoScrollTimer);
-      autoScrollTimer = setTimeout(function () {
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-      }, 250);
+      if (hasHover) {
+        clearTimeout(autoScrollTimer);
+        autoScrollTimer = setTimeout(function () {
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+        }, 250);
+      }
     }
 
     // Ciel : léger drift (fond lointain -> bouge le moins)
@@ -501,6 +533,13 @@
 
     // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
+
+    // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
+    if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
+
+    // V3 : "Picard vous invite" monte du bas (centré ~arrive 0.20), sort par le
+    // haut avant que la transition n'arrive. Hors écran aux extrêmes (overflow).
+    if (inviteBeat) inviteBeat.style.transform = 'translateY(' + ((0.70 - arrive * 3.5) * vh).toFixed(1) + 'px)';
 
     // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
     // en scrollant, puis il remonte naturellement (passage unique, défilement
@@ -521,6 +560,31 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
 
+  /* ============================================================
+     2bis. V2 : descente automatique au clic sur le badge "cliquez"
+     Le ciel est figé ; un clic lance un scroll auto lent (easing) qui
+     rejoue tout le parallax (texte de transition inclus) jusqu'à la forêt.
+     ============================================================ */
+  function startDescent() {
+    if (hasHover) return;                            // desktop : scroll libre (comme V1)
+    if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
+    autoPlaying = true;
+    const dur = 6800;                                // long -> vitesse max faible (message lisible)
+    const t0 = performance.now();
+    // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
+    function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
+    function step(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      v2Progress = ease(t) * SETTLE_AT;              // arrive = v2Progress / SETTLE_AT
+      updateScroll();
+      if (t < 1) requestAnimationFrame(step);
+      else { v2Progress = SETTLE_AT; autoPlaying = false; updateScroll(); }
+    }
+    requestAnimationFrame(step);
+  }
+  const cliquezBadge = document.getElementById('cliquez-badge');
+  if (cliquezBadge) cliquezBadge.addEventListener('click', startDescent);
+
 
   /* ============================================================
      3. RÉVÉLATION : clic maintenu -> orbe grossit, 3 textes, flou
@@ -532,6 +596,7 @@
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
   const transText = document.querySelector('.trans-text');
+  const inviteBeat = document.querySelector('.invite-beat');
   const chargeBar = document.getElementById('charge-bar');
 
   /* Découpe chaque caractère non-espace en <span class="ltr" style="--i:N"> */
