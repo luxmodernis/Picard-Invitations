@@ -421,22 +421,23 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // V2 : scroll manuel TOUJOURS bloqué — la descente est pilotée par l'auto-scroll
-  // (clic sur le badge). Le touch sert uniquement à émettre des particules.
+  // V2 : scroll manuel bloqué — la descente est pilotée par l'auto-scroll (clic
+  // sur le badge). On ne bloque QUE le touchmove (le geste de défilement) : annuler
+  // le touchstart tuerait les taps (boutons V1/V2, badge). Le touch émet aussi des
+  // particules. On n'émet pas sur les éléments interactifs (barre de version, badge).
+  function isInteractive(t) { return t && t.closest && t.closest('#version-switch, #cliquez-badge'); }
   window.addEventListener('touchstart', function (e) {
+    if (isInteractive(e.target)) return;
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
-    e.preventDefault();
-  }, { passive: false });
+  }, { passive: true });
   window.addEventListener('touchmove', function (e) {
+    if (isInteractive(e.target)) return;
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
-    e.preventDefault();
+    e.preventDefault();                  // verrouille le scroll
   }, { passive: false });
-  window.addEventListener('touchend', function (e) {
-    pressEnd();
-    e.preventDefault();
-  }, { passive: false });
+  window.addEventListener('touchend', pressEnd, { passive: true });
   // Bloque molette + clavier (desktop) pour verrouiller la navigation.
   window.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
   window.addEventListener('keydown', function (e) {
