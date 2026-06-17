@@ -224,6 +224,10 @@
       0 0 52px rgba(255, 140, 30, 0.6),
       0 0 90px rgba(255, 120, 0, 0.4);
   }
+  /* Desktop : +20 % sur le message révélé */
+  @media (hover: hover) and (pointer: fine) {
+    .txt-date { font-size: clamp(1.82rem, 7.7vw, 3.26rem); }
+  }
   .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.2em; letter-spacing: 0.08em; }
 
   /* Lettres magiques : apparition avec dance, disparition par fondu du conteneur */
@@ -517,29 +521,16 @@
      Le ciel est figé ; un clic lance un scroll auto lent (easing) qui
      rejoue tout le parallax (texte de transition inclus) jusqu'à la forêt.
      ============================================================ */
-  function easeIO(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } // easeInOutQuad
-
-  // Courbe de descente : arrive(0->1) en deux temps avec un palier lent autour
-  // du texte de transition (centré à arrive ~0.46). => lent au départ, on
-  // décélère sur le texte, court palier de lecture, puis on accélère et on
-  // ralentit de nouveau jusqu'en bas.
-  function descentArrive(t) {
-    const TEXT = 0.46;          // arrive où le texte central est centré
-    const T2 = 0.52;            // fin du palier de lecture
-    const A = 0.40, B = 0.56;   // bornes temporelles du palier
-    if (t <= A) return TEXT * easeIO(t / A);                       // ciel -> texte (décélère)
-    if (t < B)  return TEXT + (T2 - TEXT) * ((t - A) / (B - A));   // palier lent (lecture)
-    return T2 + (1 - T2) * easeIO((t - B) / (1 - B));              // texte -> forêt (accélère puis ralentit)
-  }
-
   function startDescent() {
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
-    const dur = 5400;                                // descente posée
+    const dur = 6800;                                // long -> vitesse max faible (message lisible)
     const t0 = performance.now();
+    // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
+    function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
     function step(now) {
       const t = Math.min((now - t0) / dur, 1);
-      v2Progress = descentArrive(t) * SETTLE_AT;     // arrive = v2Progress / SETTLE_AT
+      v2Progress = ease(t) * SETTLE_AT;              // arrive = v2Progress / SETTLE_AT
       updateScroll();
       if (t < 1) requestAnimationFrame(step);
       else { v2Progress = SETTLE_AT; autoPlaying = false; updateScroll(); }
