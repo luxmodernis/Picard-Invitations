@@ -602,6 +602,53 @@
     ffCtx.globalAlpha = 1; ffCtx.shadowBlur = 0;
   }
 
+
+  /* ============================================================
+     ÉTOILES FILANTES — magie du ciel (mobile uniquement, phase ciel)
+     ============================================================ */
+  const shootingStars = [];
+  let nextShoot = 0;
+
+  function spawnShootingStar() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const ang = Math.PI * (0.16 + Math.random() * 0.14);   // file vers le bas-droite
+    const speed = 6 + Math.random() * 5;
+    return {
+      x: vw * (0.05 + Math.random() * 0.7),
+      y: vh * (0.04 + Math.random() * 0.32),
+      vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+      len: 80 + Math.random() * 90, life: 1
+    };
+  }
+
+  function drawShootingStars() {
+    if (hasHover) return;                 // mobile uniquement
+    const now = performance.now();
+    if (now >= nextShoot) {
+      nextShoot = now + 2600 + Math.random() * 3800;   // toutes les ~2.6–6.4 s
+      if (arrive < 0.55) shootingStars.push(spawnShootingStar());
+    }
+    const skyFade = clamp(1 - arrive / 0.55, 0, 1);     // s'effacent quand on quitte le ciel
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      s.x += s.vx; s.y += s.vy; s.life -= 0.011;
+      if (s.life <= 0) { shootingStars.splice(i, 1); continue; }
+      const norm = Math.hypot(s.vx, s.vy);
+      const tx = s.x - s.vx / norm * s.len;
+      const ty = s.y - s.vy / norm * s.len;
+      const a = s.life * skyFade;
+      const grad = ffCtx.createLinearGradient(s.x, s.y, tx, ty);
+      grad.addColorStop(0, 'rgba(255,250,230,' + (a * 0.95).toFixed(3) + ')');
+      grad.addColorStop(1, 'rgba(255,250,230,0)');
+      ffCtx.strokeStyle = grad; ffCtx.lineWidth = 2; ffCtx.lineCap = 'round';
+      ffCtx.beginPath(); ffCtx.moveTo(s.x, s.y); ffCtx.lineTo(tx, ty); ffCtx.stroke();
+      ffCtx.globalAlpha = a; ffCtx.shadowBlur = 6; ffCtx.shadowColor = '#fffbe6';
+      ffCtx.fillStyle = '#fffbe6';
+      ffCtx.beginPath(); ffCtx.arc(s.x, s.y, 1.8, 0, Math.PI * 2); ffCtx.fill();
+      ffCtx.globalAlpha = 1; ffCtx.shadowBlur = 0;
+    }
+  }
+
   window.addEventListener('resize', function () {
     resizeCanvas(); updateScroll(); initFireflies();
   });
@@ -716,6 +763,7 @@
     }
 
     drawFireflies();
+    drawShootingStars();
     reveal();
     requestAnimationFrame(render);
   }
