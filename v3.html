@@ -183,9 +183,10 @@
   .draw-hint {
     position: absolute; left: 0; right: 0; bottom: 5.5vh; z-index: 12;
     text-align: center; pointer-events: none;
+    font-family: 'Wulkan Display', Georgia, serif;   /* même typo que "le compte à rebours" */
     font-size: clamp(0.9rem, 2.4vw, 1.3rem);
-    color: var(--gold-soft); line-height: 1.5;
-    text-shadow: 0 0 18px rgba(201, 168, 76, 0.5);
+    color: var(--gold-soft); line-height: 1.65;
+    text-shadow: none;
     will-change: opacity;
   }
   @keyframes floaty {
@@ -297,7 +298,7 @@
     position: absolute; inset: 0; z-index: 10;
     display: grid; place-items: center;
     text-align: center; pointer-events: none;
-    will-change: transform;
+    opacity: 0; will-change: transform, opacity;
   }
   .invite-beat h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
 
@@ -347,9 +348,9 @@
 
   <p class="draw-hint">Dessinez sur l'écran<br>pour révéler votre magie</p>
 
-  <!-- V3 : 1er temps au scroll -> "Picard vous invite" monte du bas -->
+  <!-- V3 : 1er temps au scroll -> "vous invite" monte du bas -->
   <div class="invite-beat">
-    <h2>Picard<br>vous invite</h2>
+    <h2>vous invite</h2>
   </div>
 
   <div class="trans-text">
@@ -541,9 +542,13 @@
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
     if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
 
-    // V3 : "Picard vous invite" monte du bas (centré ~arrive 0.20), sort par le
-    // haut avant que la transition n'arrive. Hors écran aux extrêmes (overflow).
-    if (inviteBeat) inviteBeat.style.transform = 'translateY(' + ((0.70 - arrive * 3.5) * vh).toFixed(1) + 'px)';
+    // V3 : "vous invite" monte du bas et défile à la MÊME vitesse que la
+    // transition (coef 1.95), simplement centré plus tôt (arrive ~0.24).
+    // Fondu d'apparition pour garder l'accueil propre (logo + badge seuls).
+    if (inviteBeat) {
+      inviteBeat.style.transform = 'translateY(' + ((0.468 - arrive * 1.95) * vh).toFixed(1) + 'px)';
+      inviteBeat.style.opacity = clamp((arrive - 0.05) / 0.12, 0, 1).toFixed(3);
+    }
 
     // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
     // en scrollant, puis il remonte naturellement (passage unique, défilement
