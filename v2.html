@@ -173,6 +173,7 @@
     width: clamp(165px, 17.5vw, 232px);
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
+    pointer-events: auto; cursor: pointer;   /* V2 : badge cliquable */
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
@@ -210,7 +211,19 @@
     will-change: opacity, transform;
   }
   .txt-prompt { font-size: clamp(1.5rem, 4vw, 2.6rem); }
-  .txt-date { font-family: '4 Privet Drive', 'Wulkan Display', Georgia, serif; font-size: clamp(2.4rem, 6.5vw, 4.5rem); }
+  .txt-date {
+    font-family: '4 Privet Drive', 'Wulkan Display', Georgia, serif;
+    font-size: clamp(1.9rem, 8vw, 3.4rem);
+    text-transform: uppercase;            /* V2 : message révélé tout en capitales */
+    color: #fff3d6;                       /* cœur clair chaud */
+    /* Halo lumineux doré -> orangé (effet "incandescent" de la capture) */
+    text-shadow:
+      0 0 6px rgba(255, 240, 200, 0.95),
+      0 0 14px rgba(255, 203, 110, 0.9),
+      0 0 28px rgba(255, 168, 60, 0.8),
+      0 0 52px rgba(255, 140, 30, 0.6),
+      0 0 90px rgba(255, 120, 0, 0.4);
+  }
   .txt-date .hour { display: inline-block; margin-top: 0.5rem; font-size: 1.2em; letter-spacing: 0.08em; }
 
   /* Lettres magiques : apparition avec dance, disparition par fondu du conteneur */
@@ -298,7 +311,7 @@
   <div class="sky-content">
     <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
     <h1 class="invite-line">vous invite</h1>
-    <img class="scroll-badge" src="IMG/scroll.png" alt="Scrollez pour commencer l'aventure" draggable="false">
+    <img id="cliquez-badge" class="scroll-badge" src="IMG/cliquez.png" alt="Cliquez pour commencer l'aventure" draggable="false">
   </div>
 
   <div class="trans-text">
@@ -408,23 +421,26 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // Particules au touch PARTOUT (toutes les phases). On ne bloque le scroll
-  // (preventDefault) que pendant la scène de révélation, sinon on laisse
-  // défiler normalement tout en émettant les paillettes sous le doigt.
-  function lockScroll() { return arrive > 0.98; }
+  // V2 : scroll manuel TOUJOURS bloqué — la descente est pilotée par l'auto-scroll
+  // (clic sur le badge). Le touch sert uniquement à émettre des particules.
   window.addEventListener('touchstart', function (e) {
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
-    if (lockScroll()) e.preventDefault();
+    e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchmove', function (e) {
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
-    if (lockScroll()) e.preventDefault();
+    e.preventDefault();
   }, { passive: false });
   window.addEventListener('touchend', function (e) {
     pressEnd();
-    if (lockScroll()) e.preventDefault();
+    e.preventDefault();
+  }, { passive: false });
+  // Bloque molette + clavier (desktop) pour verrouiller la navigation.
+  window.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
+  window.addEventListener('keydown', function (e) {
+    if ([' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
   }, { passive: false });
 
 
@@ -445,6 +461,8 @@
   let forestSettled = false;
   let autoScrollTimer = null;
   let returningToTop = false;  // empêche l'auto-scroll pendant le retour "Recommencer"
+  let autoPlaying = false;     // V2 : descente automatique en cours (clic sur le badge)
+  let v2Progress = 0;          // V2 : progression 0->1 pilotée par l'auto-scroll (pas le scroll réel)
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -453,23 +471,16 @@
 
   function updateScroll() {
     const vh = window.innerHeight;
-    const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
-    const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
+    // V2 : la progression est pilotée par v2Progress (auto-scroll), pas le scroll réel.
+    const p = clamp(v2Progress, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
     // Retour "Recommencer" terminé dès qu'on est près du haut
     if (p < 0.02) returningToTop = false;
 
-    // Dès que la forêt est posée, scroll auto jusqu'en bas : supprime le scroll
-    // résiduel (28 % de hauteur) et empêche la "danse" sur mobile.
-    // Bloqué pendant le retour au haut (returningToTop) pour éviter le conflit.
-    if (arrive >= 1 && !forestSettled && !returningToTop) {
-      forestSettled = true;
-      clearTimeout(autoScrollTimer);
-      autoScrollTimer = setTimeout(function () {
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-      }, 250);
-    }
+    // V2 : pas de scroll réel — la forêt est posée dès que v2Progress atteint SETTLE_AT,
+    // rien à "rattraper". (Bloc d'auto-scroll résiduel de V1 retiré.)
+    if (arrive >= 1 && !forestSettled) forestSettled = true;
 
     // Ciel : léger drift (fond lointain -> bouge le moins)
     ciel.style.transform = 'translateY(' + (-arrive * vh * 0.12).toFixed(1) + 'px) scale(1.05)';
@@ -499,6 +510,29 @@
     ticking = false;
   }
   window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* ============================================================
+     2bis. V2 : descente automatique au clic sur le badge "cliquez"
+     Le ciel est figé ; un clic lance un scroll auto lent (easing) qui
+     rejoue tout le parallax (texte de transition inclus) jusqu'à la forêt.
+     ============================================================ */
+  function startDescent() {
+    if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
+    autoPlaying = true;
+    const dur = 4200;                                // ~4,2 s : assez lent pour lire le texte
+    const t0 = performance.now();
+    function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } // easeInOutQuad
+    function step(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      v2Progress = ease(t) * SETTLE_AT;              // plage visible (arrive 0->1) sur toute la durée
+      updateScroll();
+      if (t < 1) requestAnimationFrame(step);
+      else { v2Progress = SETTLE_AT; autoPlaying = false; updateScroll(); }
+    }
+    requestAnimationFrame(step);
+  }
+  const cliquezBadge = document.getElementById('cliquez-badge');
+  if (cliquezBadge) cliquezBadge.addEventListener('click', startDescent);
 
 
   /* ============================================================
