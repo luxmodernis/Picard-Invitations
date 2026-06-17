@@ -489,6 +489,7 @@
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
   const drawHint   = document.querySelector('.draw-hint');
+  const skyBadge   = (function(){ const i = document.getElementById('cliquez-badge'); return i && i.parentElement; })(); // <picture> (l'img a une anim CSS qui écrase style.opacity)
 
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
@@ -541,6 +542,9 @@
 
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
     if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
+
+    // V3 : le badge "png" disparaît vite dès qu'on amorce (avant que "vous invite" monte)
+    if (skyBadge) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
 
     // V3 : "vous invite" monte du bas et défile à la MÊME vitesse que la
     // transition (coef 1.95), simplement centré plus tôt (arrive ~0.24).
