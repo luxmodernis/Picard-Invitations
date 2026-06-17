@@ -329,7 +329,11 @@
   <div class="sky-content">
     <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
     <h1 class="invite-line">vous invite</h1>
-    <img id="cliquez-badge" class="scroll-badge" src="IMG/cliquez.png" alt="Cliquez pour commencer l'aventure" draggable="false">
+    <picture>
+      <!-- Tactile (mobile) : "cliquez" ; sinon (desktop, scroll) : "scrollez" -->
+      <source media="(hover: none) and (pointer: coarse)" srcset="IMG/cliquez.png">
+      <img id="cliquez-badge" class="scroll-badge" src="IMG/scroll.png" alt="Commencer l'aventure" draggable="false">
+    </picture>
   </div>
 
   <p class="draw-hint">Dessinez sur l'écran<br>pour révéler votre magie</p>
