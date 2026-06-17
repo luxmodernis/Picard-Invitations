@@ -201,7 +201,7 @@
   .orbe-spin { width: 100%; height: 100%; animation: spin 26s linear infinite; }
   .orbe-spin img {
     width: 100%; height: 100%; object-fit: contain;
-    filter: drop-shadow(0 0 30px rgba(230, 200, 121, 0.35));
+    /* pas de filter:drop-shadow sur l'image qui tourne -> évite le clignotement Android */
   }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
@@ -239,19 +239,20 @@
     animation: ltrReveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     animation-delay: calc(var(--i) * 38ms);
   }
+  /* NB : pas de filter:blur par lettre -> évite l'éviction de couches GPU
+     (lettres qui disparaissent) sur Android. La "danse" reste via transform. */
   @keyframes ltrReveal {
-    0%  { opacity: 0; filter: blur(16px);
+    0%  { opacity: 0;
           transform: translateY(calc(sin(var(--i) * 89deg) * 22px + 18px))
                      translateX(calc(cos(var(--i) * 137deg) * 14px))
                      rotate(calc(sin(var(--i) * 233deg) * 20deg))
                      scale(0.65); }
-    25% { opacity: 0.9; filter: blur(5px);
+    25% { opacity: 0.9;
           transform: translateY(calc(sin(var(--i) * 89deg) * -9px - 7px))
                      translateX(calc(cos(var(--i) * 137deg) * -6px))
                      rotate(calc(sin(var(--i) * 233deg) * -9deg))
                      scale(1.08); }
-    52% { filter: blur(1px);
-          transform: translateY(calc(sin(var(--i) * 89deg) * 5px))
+    52% { transform: translateY(calc(sin(var(--i) * 89deg) * 5px))
                      translateX(calc(cos(var(--i) * 137deg) * 3px))
                      rotate(calc(sin(var(--i) * 233deg) * 4deg))
                      scale(0.96); }
@@ -259,7 +260,7 @@
                      translateX(0px)
                      rotate(calc(sin(var(--i) * 233deg) * -1deg))
                      scale(1.01); }
-    100%{ opacity: 1; filter: blur(0px);
+    100%{ opacity: 1;
           transform: translateY(0) translateX(0) rotate(0deg) scale(1); }
   }
 
