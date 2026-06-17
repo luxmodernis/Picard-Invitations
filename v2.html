@@ -175,6 +175,19 @@
     animation: floaty 3.4s ease-in-out infinite;
     pointer-events: auto; cursor: pointer;   /* V2 : badge cliquable */
   }
+  /* Mobile : badge +20 % */
+  @media (hover: none) and (pointer: coarse) {
+    .scroll-badge { width: clamp(198px, 21vw, 278px); }
+  }
+  /* Phrase d'invite en bas du ciel (fond comme "le compte à rebours…") */
+  .draw-hint {
+    position: absolute; left: 0; right: 0; bottom: 5.5vh; z-index: 12;
+    text-align: center; pointer-events: none;
+    font-size: clamp(0.9rem, 2.4vw, 1.3rem);
+    color: var(--gold-soft); line-height: 1.5;
+    text-shadow: 0 0 18px rgba(201, 168, 76, 0.5);
+    will-change: opacity;
+  }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
     50% { transform: translateY(10px); opacity: 1; }
@@ -318,12 +331,14 @@
     <img id="cliquez-badge" class="scroll-badge" src="IMG/cliquez.png" alt="Cliquez pour commencer l'aventure" draggable="false">
   </div>
 
+  <p class="draw-hint">Dessinez sur l'écran<br>pour révéler votre magie</p>
+
   <div class="trans-text">
     <h2>à un nouveau<br>rendez-vous</h2>
   </div>
 
   <div class="forest-stage">
-    <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.png" alt="" draggable="false"></picture></div></div>
+    <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.webp" alt="" draggable="false"></picture></div></div>
     <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
     <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
     <p class="txt txt-final">
@@ -425,11 +440,11 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // V2 : scroll manuel bloqué — la descente est pilotée par l'auto-scroll (clic
-  // sur le badge). On ne bloque QUE le touchmove (le geste de défilement) : annuler
-  // le touchstart tuerait les taps (boutons V1/V2, badge). Le touch émet aussi des
-  // particules. On n'émet pas sur les éléments interactifs (barre de version, badge).
-  function isInteractive(t) { return t && t.closest && t.closest('#version-switch, #cliquez-badge'); }
+  // V2 — MOBILE : ciel figé, la descente est pilotée par le clic sur le badge.
+  // On bloque le touchmove (défilement) mais jamais le touchstart (sinon les taps
+  // sur la barre V1/V2/V3 + badge sont avalés). DESKTOP (hasHover) : on ne bloque
+  // rien -> scroll libre identique à V1.
+  function isInteractive(t) { return t && t.closest && t.closest('#version-switch, .scroll-badge'); }
   window.addEventListener('touchstart', function (e) {
     if (isInteractive(e.target)) return;
     const t = e.touches[0];
@@ -439,14 +454,9 @@
     if (isInteractive(e.target)) return;
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
-    e.preventDefault();                  // verrouille le scroll
+    if (!hasHover) e.preventDefault();   // verrou de scroll : mobile uniquement
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
-  // Bloque molette + clavier (desktop) pour verrouiller la navigation.
-  window.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
-  window.addEventListener('keydown', function (e) {
-    if ([' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
-  }, { passive: false });
 
 
   /* ============================================================
@@ -458,6 +468,7 @@
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
+  const drawHint   = document.querySelector('.draw-hint');
 
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
@@ -476,16 +487,27 @@
 
   function updateScroll() {
     const vh = window.innerHeight;
-    // V2 : la progression est pilotée par v2Progress (auto-scroll), pas le scroll réel.
-    const p = clamp(v2Progress, 0, 1);
+    const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
+    // DESKTOP : scroll réel (comme V1). MOBILE : progression virtuelle (auto-scroll).
+    const p = hasHover
+      ? clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1)
+      : clamp(v2Progress, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
     // Retour "Recommencer" terminé dès qu'on est près du haut
     if (p < 0.02) returningToTop = false;
 
-    // V2 : pas de scroll réel — la forêt est posée dès que v2Progress atteint SETTLE_AT,
-    // rien à "rattraper". (Bloc d'auto-scroll résiduel de V1 retiré.)
-    if (arrive >= 1 && !forestSettled) forestSettled = true;
+    // Desktop : rattrape le scroll résiduel (28 %) une fois la forêt posée, comme V1.
+    // Mobile : pas de scroll réel, rien à rattraper.
+    if (arrive >= 1 && !forestSettled && !returningToTop) {
+      forestSettled = true;
+      if (hasHover) {
+        clearTimeout(autoScrollTimer);
+        autoScrollTimer = setTimeout(function () {
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+        }, 250);
+      }
+    }
 
     // Ciel : léger drift (fond lointain -> bouge le moins)
     ciel.style.transform = 'translateY(' + (-arrive * vh * 0.12).toFixed(1) + 'px) scale(1.05)';
@@ -496,6 +518,9 @@
 
     // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
     skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
+
+    // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
+    if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
 
     // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
     // en scrollant, puis il remonte naturellement (passage unique, défilement
@@ -522,6 +547,7 @@
      rejoue tout le parallax (texte de transition inclus) jusqu'à la forêt.
      ============================================================ */
   function startDescent() {
+    if (hasHover) return;                            // desktop : scroll libre (comme V1)
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
     const dur = 6800;                                // long -> vitesse max faible (message lisible)

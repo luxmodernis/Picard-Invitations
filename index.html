@@ -174,6 +174,10 @@
     height: auto;
     animation: floaty 3.4s ease-in-out infinite;
   }
+  /* Mobile : badge +20 % */
+  @media (hover: none) and (pointer: coarse) {
+    .scroll-badge { width: clamp(198px, 21vw, 278px); }
+  }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
     50% { transform: translateY(10px); opacity: 1; }
@@ -322,7 +326,7 @@
   </div>
 
   <div class="forest-stage">
-    <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.png" alt="" draggable="false"></picture></div></div>
+    <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.webp" alt="" draggable="false"></picture></div></div>
     <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
     <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
     <p class="txt txt-final">
@@ -425,23 +429,23 @@
   window.addEventListener('mouseup', pressEnd);
 
   // Particules au touch PARTOUT (toutes les phases). On ne bloque le scroll
-  // (preventDefault) que pendant la scène de révélation, sinon on laisse
-  // défiler normalement tout en émettant les paillettes sous le doigt.
+  // (preventDefault sur touchmove) que pendant la scène de révélation. On ne
+  // touche jamais au touchstart (sinon les taps sur la barre V1/V2/V3 sont
+  // avalés) et on ignore les éléments interactifs.
   function lockScroll() { return arrive > 0.98; }
+  function isInteractive(t) { return t && t.closest && t.closest('#version-switch, .scroll-badge'); }
   window.addEventListener('touchstart', function (e) {
+    if (isInteractive(e.target)) return;
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
-    if (lockScroll()) e.preventDefault();
-  }, { passive: false });
+  }, { passive: true });
   window.addEventListener('touchmove', function (e) {
+    if (isInteractive(e.target)) return;
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
     if (lockScroll()) e.preventDefault();
   }, { passive: false });
-  window.addEventListener('touchend', function (e) {
-    pressEnd();
-    if (lockScroll()) e.preventDefault();
-  }, { passive: false });
+  window.addEventListener('touchend', pressEnd, { passive: true });
 
 
   /* ============================================================
