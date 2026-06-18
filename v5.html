@@ -805,12 +805,17 @@
         txtDate.style.transition = '';
         txtDate.style.opacity = '1';
         const ltrs = txtDate.querySelectorAll('.ltr');
-        ltrs.forEach(function (s) { s.classList.remove('on'); });
+        ltrs.forEach(function (s) { s.classList.remove('on'); s.style.opacity = ''; });
         void txtDate.offsetWidth; // force reflow → redémarre l'animation
         ltrs.forEach(function (s) { s.classList.add('on'); });
         // Marquer comme entièrement visible après le dernier stagger
         ltrTimer = setTimeout(function () {
-          if (ltrState === 'showing') ltrState = 'visible';
+          if (ltrState === 'showing') {
+            ltrState = 'visible';
+            // Android : verrouille les lettres visibles (le 'forwards' n'est pas
+            // toujours tenu par le compositeur -> lettres qui restaient à 0).
+            ltrs.forEach(function (s) { s.style.opacity = '1'; });
+          }
         }, (ltrs.length - 1) * 38 + 750);
       }
       // Disparition si relâché (charge < 0.10) : fondu du conteneur, sans flash
@@ -820,7 +825,7 @@
         txtDate.style.transition = 'opacity 0.35s ease-out';
         txtDate.style.opacity = '0';
         ltrTimer = setTimeout(function () {
-          txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); });
+          txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); s.style.opacity = ''; });
           txtDate.style.transition = '';
         }, 400);
       }
