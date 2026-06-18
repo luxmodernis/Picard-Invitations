@@ -460,10 +460,11 @@
     pressStart(t.clientX, t.clientY);
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
-    if (isInteractive(e.target)) return;
-    const t = e.touches[0];
-    emitTo(t.clientX, t.clientY, 1.8);
-    if (!hasHover) e.preventDefault();   // verrou de scroll : mobile uniquement
+    if (!isInteractive(e.target)) {
+      const t = e.touches[0];
+      emitTo(t.clientX, t.clientY, 1.8);
+    }
+    if (!hasHover) e.preventDefault();   // mobile : verrou de scroll TOUJOURS (même sur le badge)
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
 

@@ -484,10 +484,11 @@
     pressStart(t.clientX, t.clientY);
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
-    if (isInteractive(e.target)) return;
-    const t = e.touches[0];
-    emitTo(t.clientX, t.clientY, 1.8);
-    if (!hasHover) e.preventDefault();   // verrou de scroll : mobile uniquement
+    if (!isInteractive(e.target)) {
+      const t = e.touches[0];
+      emitTo(t.clientX, t.clientY, 1.8);
+    }
+    if (!hasHover) e.preventDefault();   // mobile : verrou de scroll TOUJOURS (même sur le badge)
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
   // V5 desktop : on bloque le scroll tant que le badge "scrollez" n'est pas affiché.
@@ -648,6 +649,8 @@
   const veil      = document.querySelector('.veil');
   const orbeWrap  = document.querySelector('.orbe-wrap');
   const txtPrompt = document.querySelector('.txt-prompt');
+  // Mobile : consigne adaptée au geste tactile (dessiner) plutôt qu'au clic maintenu
+  if (!hasHover && txtPrompt) txtPrompt.innerHTML = 'Dessinez un cercle<br>pour révéler';
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
   const transText = document.querySelector('.trans-text');
