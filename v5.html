@@ -204,6 +204,7 @@
     color: var(--gold-soft); line-height: 1.65;
     text-shadow: none;
     will-change: opacity;
+    transition: opacity 0.6s ease;
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
@@ -489,6 +490,13 @@
     if (!hasHover) e.preventDefault();   // verrou de scroll : mobile uniquement
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
+  // V5 desktop : on bloque le scroll tant que le badge "scrollez" n'est pas affiché.
+  window.addEventListener('wheel', function (e) {
+    if (hasHover && !badgeRevealed) e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('keydown', function (e) {
+    if (hasHover && !badgeRevealed && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
+  }, { passive: false });
 
 
   /* ============================================================
@@ -513,6 +521,7 @@
     if (badgeRevealed) return;
     badgeRevealed = true;
     skyContent.classList.add('revealed');
+    if (drawHint) drawHint.style.opacity = '0';   // V5 : on masque "Dessinez sur l'écran…" quand le badge apparaît
   }
   setTimeout(revealBadge, REVEAL_MAX_DELAY);
 
@@ -566,7 +575,7 @@
     // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
     // montent ENSEMBLE comme un seul bloc.
     const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
-    const JOIN_OFF = 0.16;    // position jointe du texte (en vh sous le centre) — interligne "paragraphe"
+    const JOIN_OFF = hasHover ? 0.16 : 0.10;   // marge jointe : +petite sur mobile (vh plus haut)
     const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
     const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
     let heroTY, transTY;
@@ -581,7 +590,7 @@
     skyContent.style.transform = 'translateY(' + (heroTY * vh).toFixed(1) + 'px)';
 
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
-    if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
+    if (drawHint) drawHint.style.opacity = badgeRevealed ? '0' : clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
 
     // V2 : le badge "scrollez/cliquez" disparaît dès qu'on amorce (scroll/clic)
     if (skyBadge && badgeRevealed) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
@@ -615,7 +624,7 @@
     if (!badgeRevealed) return;                      // V4 : pas de descente tant que le badge n'est pas apparu
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
-    const dur = 6800;                                // long -> vitesse max faible (message lisible)
+    const dur = 8500;                                // mobile : descente plus posée
     const t0 = performance.now();
     // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
     function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
