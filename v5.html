@@ -515,7 +515,7 @@
   // de secours, et fait remonter le hero (logo + "vous invite").
   let drawAmount = 0;
   let badgeRevealed = false;
-  const DRAW_THRESHOLD = 1800;     // px de dessin cumulés avant apparition
+  const DRAW_THRESHOLD = hasHover ? 3800 : 1800;   // desktop : curseur accumule vite -> seuil + haut
   const REVEAL_MAX_DELAY = 8000;   // filet de sécurité (ms) même sans dessiner
   function revealBadge() {
     if (badgeRevealed) return;
@@ -624,7 +624,7 @@
     if (!badgeRevealed) return;                      // V4 : pas de descente tant que le badge n'est pas apparu
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
-    const dur = 8500;                                // mobile : descente plus posée
+    const dur = 9800;                                // mobile : descente plus posée
     const t0 = performance.now();
     // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
     function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
