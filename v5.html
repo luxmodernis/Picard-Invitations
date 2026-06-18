@@ -179,6 +179,22 @@
   @media (hover: none) and (pointer: coarse) {
     .scroll-badge { width: clamp(198px, 21vw, 278px); }
   }
+
+  /* ===== V4 : badge révélé après dessin ===== */
+  /* Hero (logo + "vous invite") : centré, remonte un peu quand le badge apparaît */
+  .hero {
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .sky-content.revealed .hero { transform: translateY(-7vh); }
+  /* Badge : hors flux (ne décale pas le centrage initial), masqué puis fondu */
+  .badge-pic {
+    position: absolute; left: 50%; top: 62%;
+    transform: translateX(-50%);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.9s ease;
+  }
+  .sky-content.revealed .badge-pic { opacity: 1; pointer-events: auto; }
   /* Phrase d'invite en bas du ciel (fond comme "le compte à rebours…") */
   .draw-hint {
     position: absolute; left: 0; right: 0; bottom: 5.5vh; z-index: 12;
@@ -310,10 +326,10 @@
 <!-- Barre de bascule V1/V2 (TEMPORAIRE — à retirer une fois une version validée) -->
 <nav id="version-switch" aria-label="Choix de version">
   <a href="./" class="vs-btn">V1</a>
-  <a href="./v2.html" class="vs-btn vs-active">V2</a>
+  <a href="./v2.html" class="vs-btn">V2</a>
   <a href="./v3.html" class="vs-btn">V3</a>
   <a href="./v4.html" class="vs-btn">V4</a>
-  <a href="./v5.html" class="vs-btn">V5</a>
+  <a href="./v5.html" class="vs-btn vs-active">V5</a>
 </nav>
 
 <canvas id="particles"></canvas>
@@ -330,10 +346,14 @@
     <canvas id="ff-canvas"></canvas>
   </div>
 
+  <!-- V4 : accueil = logo + "vous invite" centrés ; le badge est masqué et
+       apparaît après qu'on ait dessiné (ou après un délai), en remontant le hero -->
   <div class="sky-content">
-    <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
-    <h1 class="invite-line">vous invite</h1>
-    <picture>
+    <div class="hero">
+      <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
+      <h1 class="invite-line">vous invite</h1>
+    </div>
+    <picture class="badge-pic">
       <!-- Tactile (mobile) : "cliquez" ; sinon (desktop, scroll) : "scrollez" -->
       <source media="(hover: none) and (pointer: coarse)" srcset="IMG/cliquez.png">
       <img id="cliquez-badge" class="scroll-badge" src="IMG/scroll.png" alt="Commencer l'aventure" draggable="false">
@@ -430,6 +450,9 @@
       const steps = Math.floor(dist / PARAMS.step);
       for (let i = 1; i <= steps; i++) { const t = i / steps; spawn(lastX + dx * t, lastY + dy * t, mult || 1); }
       lastX = x; lastY = y;
+      // V4 : accumule le "dessin" -> révèle le badge au seuil
+      drawAmount += dist;
+      if (!badgeRevealed && drawAmount >= DRAW_THRESHOLD) revealBadge();
     }
   }
   function pressStart(x, y) { pressed = true; lastX = x; lastY = y; spawn(x, y, 1); }
@@ -480,6 +503,19 @@
   const drawHint   = document.querySelector('.draw-hint');
   const skyBadge   = (function(){ const i = document.getElementById('cliquez-badge'); return i && i.parentElement; })(); // <picture> (l'img a une anim CSS qui écrase style.opacity)
 
+  // V4 : le badge apparaît après avoir dessiné (accumulateur) OU après un délai
+  // de secours, et fait remonter le hero (logo + "vous invite").
+  let drawAmount = 0;
+  let badgeRevealed = false;
+  const DRAW_THRESHOLD = 1800;     // px de dessin cumulés avant apparition
+  const REVEAL_MAX_DELAY = 8000;   // filet de sécurité (ms) même sans dessiner
+  function revealBadge() {
+    if (badgeRevealed) return;
+    badgeRevealed = true;
+    skyContent.classList.add('revealed');
+  }
+  setTimeout(revealBadge, REVEAL_MAX_DELAY);
+
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
   let arrive = 0;          // 0 = en haut (ciel), 1 = forêt posée
@@ -526,14 +562,17 @@
     const nuageStart = hasHover ? 0.42 : 0.65;
     nuages.style.transform = 'translateY(' + ((nuageStart - arrive * 1.75) * vh).toFixed(1) + 'px)';
 
-    // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
-    skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
+    // V5 : le hero RESTE en place au début, puis est "poussé" vers le haut par
+    // l'arrivée du texte de transition (handoff plus lisible). Avant le contact
+    // (arrive < 0.25) il ne bouge pas ; ensuite il dégage vers le haut.
+    const heroPush = clamp((arrive - 0.25) / 0.25, 0, 1) * 1.4;
+    skyContent.style.transform = 'translateY(' + (-heroPush * vh).toFixed(1) + 'px)';
 
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
     if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
 
     // V2 : le badge "scrollez/cliquez" disparaît dès qu'on amorce (scroll/clic)
-    if (skyBadge) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
+    if (skyBadge && badgeRevealed) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
 
     // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
     // en scrollant, puis il remonte naturellement (passage unique, défilement
@@ -561,6 +600,7 @@
      ============================================================ */
   function startDescent() {
     if (hasHover) return;                            // desktop : scroll libre (comme V1)
+    if (!badgeRevealed) return;                      // V4 : pas de descente tant que le badge n'est pas apparu
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
     const dur = 6800;                                // long -> vitesse max faible (message lisible)
