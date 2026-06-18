@@ -562,11 +562,23 @@
     const nuageStart = hasHover ? 0.42 : 0.65;
     nuages.style.transform = 'translateY(' + ((nuageStart - arrive * 1.75) * vh).toFixed(1) + 'px)';
 
-    // V5 : le hero RESTE en place au début, puis est "poussé" vers le haut par
-    // l'arrivée du texte de transition (handoff plus lisible). Avant le contact
-    // (arrive < 0.25) il ne bouge pas ; ensuite il dégage vers le haut.
-    const heroPush = clamp((arrive - 0.25) / 0.25, 0, 1) * 1.4;
-    skyContent.style.transform = 'translateY(' + (-heroPush * vh).toFixed(1) + 'px)';
+    // V5 : phase A -> "à un nouveau rendez-vous" monte REJOINDRE le bloc (logo +
+    // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
+    // montent ENSEMBLE comme un seul bloc.
+    const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
+    const JOIN_OFF = 0.12;    // position jointe du texte (en vh sous le centre)
+    const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
+    const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
+    let heroTY, transTY;
+    if (arrive <= JOIN_AT) {
+      heroTY = 0;                                              // hero fixe
+      transTY = START_BOT + (JOIN_OFF - START_BOT) * (arrive / JOIN_AT);  // le texte rejoint
+    } else {
+      const rise = (arrive - JOIN_AT) * BLOCK_RISE;           // montée commune
+      heroTY = -rise;
+      transTY = JOIN_OFF - rise;
+    }
+    skyContent.style.transform = 'translateY(' + (heroTY * vh).toFixed(1) + 'px)';
 
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
     if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
@@ -578,7 +590,7 @@
     // en scrollant, puis il remonte naturellement (passage unique, défilement
     // linéaire). Hors écran aux extrêmes -> pas besoin de fondu d'opacité.
     transText.style.opacity = '1';
-    transText.style.transform = 'translateY(' + ((0.9 - arrive * 1.95) * vh).toFixed(1) + 'px)';
+    transText.style.transform = 'translateY(' + (transTY * vh).toFixed(1) + 'px)';
 
     // Forêt : chaque couche = image entière ancrée en bas, montée par translateY.
     // fh = hauteur rendue de l'image (pleine largeur). Travel ≥ fh → couche
