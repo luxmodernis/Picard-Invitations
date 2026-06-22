@@ -307,13 +307,13 @@
   /* Bouton "RECOMMENCER" (doré, sous le final) */
   .btn-restart {
     align-self: end; justify-self: center; margin-bottom: 7vh; z-index: 6;
-    font-family: 'Wulkan Display', Georgia, serif;
-    font-size: clamp(0.95rem, 2.4vw, 1.25rem); letter-spacing: 0.14em;
+    font-family: 'Wulkan Display', Georgia, serif; font-weight: 500;
+    font-size: clamp(0.8rem, 2vw, 1rem); letter-spacing: 0.1em;
     color: #2e1e1a;
     background: linear-gradient(180deg, #f3d883 0%, var(--gold) 58%, #b8923e 100%);
     border: none; border-radius: 999px;
-    padding: 0.7em 2.3em; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.45);
+    padding: 0.55em 1.8em; cursor: pointer;
+    box-shadow: 0 4px 18px rgba(201, 168, 76, 0.4);
     opacity: 0; pointer-events: none;
     transition: opacity 0.8s ease;
   }
@@ -379,8 +379,8 @@
         <img class="scroll-badge" src="IMG/Badge-X2-Dessinez.png" alt="Dessinez sur l'écran" draggable="false">
       </picture>
       <picture class="badge-action">
-        <source media="(hover: none) and (pointer: coarse)" srcset="IMG/Badge-X2-Cliquez.png">
-        <img id="cliquez-badge" class="scroll-badge" src="IMG/Badge-X2-Scrollez.png" alt="Commencer l'aventure" draggable="false">
+        <!-- V6 : "Scrollez" sur mobile ET desktop (on scrolle dans les deux cas) -->
+        <img id="cliquez-badge" class="scroll-badge" src="IMG/Badge-X2-Scrollez.png" alt="Scrollez pour continuer" draggable="false">
       </picture>
     </div>
   </div>
@@ -396,7 +396,7 @@
     <p class="txt txt-final">
       Le compte à rebours est lancé !<br>Soyez prêts !
     </p>
-    <button class="btn-restart" type="button">RECOMMENCER</button>
+    <button class="btn-restart" type="button">Recommencer</button>
   </div>
 
 
@@ -496,30 +496,29 @@
   });
   window.addEventListener('mouseup', pressEnd);
 
-  // V2 — MOBILE : ciel figé, la descente est pilotée par le clic sur le badge.
-  // On bloque le touchmove (défilement) mais jamais le touchstart (sinon les taps
-  // sur la barre V1/V2/V3 + badge sont avalés). DESKTOP (hasHover) : on ne bloque
-  // rien -> scroll libre identique à V1.
+  // V6 : on DESSINE (particules + scroll bloqué) uniquement (1) avant la
+  // transformation du badge (phase ciel) et (2) une fois en bas (révélation).
+  // Entre les deux, le doigt / la molette défilent normalement, sans particules.
   function isInteractive(t) { return t && t.closest && t.closest('#version-switch, .scroll-badge'); }
+  function drawPhase() { return !badgeRevealed || arrive > 0.98; }
   window.addEventListener('touchstart', function (e) {
-    if (isInteractive(e.target)) return;
+    if (isInteractive(e.target) || !drawPhase()) return;
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
-    if (!isInteractive(e.target)) {
-      const t = e.touches[0];
-      emitTo(t.clientX, t.clientY, 1.8);
-    }
-    if (!hasHover) e.preventDefault();   // mobile : verrou de scroll TOUJOURS (même sur le badge)
+    if (isInteractive(e.target) || !drawPhase()) return;   // phase descente : scroll libre, pas de particules
+    const t = e.touches[0];
+    emitTo(t.clientX, t.clientY, 1.8);
+    e.preventDefault();                                    // dessin -> on bloque le scroll
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
-  // V5 desktop : on bloque le scroll tant que le badge "scrollez" n'est pas affiché.
+  // Desktop : molette/clavier bloqués pendant les phases de dessin (avant transfo + en bas).
   window.addEventListener('wheel', function (e) {
-    if (hasHover && !badgeRevealed) e.preventDefault();
+    if (hasHover && drawPhase()) e.preventDefault();
   }, { passive: false });
   window.addEventListener('keydown', function (e) {
-    if (hasHover && !badgeRevealed && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
+    if (hasHover && drawPhase() && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
   }, { passive: false });
 
 
@@ -541,12 +540,24 @@
   let badgeRevealed = false;
   const DRAW_THRESHOLD = hasHover ? 3800 : 1800;   // desktop : curseur accumule vite -> seuil + haut
 
-  // Gerbe de paillettes dorées au centre du badge (effet "magique").
+  // Gerbe de paillettes dorées (effet "magique") : part du centre du CERCLE
+  // visible (plus haut que le centre du png), tout autour, SANS gravité.
   function magicBurst() {
     if (!badgeStack) return;
     const r = badgeStack.getBoundingClientRect();
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    for (let i = 0; i < 44; i++) spawn(cx, cy, 2.6);
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height * 0.38;   // centre du cercle visible
+    for (let i = 0; i < 220; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = PARAMS.speed * (0.5 + Math.random() * 2.0);
+      particles.push({
+        x: cx, y: cy, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        r: PARAMS.size * (0.6 + Math.random()) * (hasHover ? 1 : 0.6), life: 1,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        wFreq: 0.05 + Math.random() * 0.15, wPhase: Math.random() * Math.PI * 2,
+        age: 0, ng: true   // ng = no gravity -> part tout autour
+      });
+    }
   }
   // Transforme le badge "Dessinez" -> "Cliquez"(mobile)/"Scrollez"(desktop).
   function revealBadge() {
@@ -563,8 +574,6 @@
   let forestSettled = false;
   let autoScrollTimer = null;
   let returningToTop = false;  // empêche l'auto-scroll pendant le retour "Recommencer"
-  let autoPlaying = false;     // V2 : descente automatique en cours (clic sur le badge)
-  let v2Progress = 0;          // V2 : progression 0->1 pilotée par l'auto-scroll (pas le scroll réel)
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -574,25 +583,20 @@
   function updateScroll() {
     const vh = window.innerHeight;
     const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
-    // DESKTOP : scroll réel (comme V1). MOBILE : progression virtuelle (auto-scroll).
-    const p = hasHover
-      ? clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1)
-      : clamp(v2Progress, 0, 1);
+    // V6 : scroll réel pour desktop ET mobile.
+    const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
     // Retour "Recommencer" terminé dès qu'on est près du haut
     if (p < 0.02) returningToTop = false;
 
-    // Desktop : rattrape le scroll résiduel (28 %) une fois la forêt posée, comme V1.
-    // Mobile : pas de scroll réel, rien à rattraper.
+    // Rattrape le scroll résiduel (28 %) une fois la forêt posée.
     if (arrive >= 1 && !forestSettled && !returningToTop) {
       forestSettled = true;
-      if (hasHover) {
-        clearTimeout(autoScrollTimer);
-        autoScrollTimer = setTimeout(function () {
-          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-        }, 250);
-      }
+      clearTimeout(autoScrollTimer);
+      autoScrollTimer = setTimeout(function () {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      }, 250);
     }
 
     // Ciel : léger drift (fond lointain -> bouge le moins)
@@ -606,7 +610,7 @@
     // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
     // montent ENSEMBLE comme un seul bloc.
     const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
-    const JOIN_OFF = hasHover ? 0.16 : 0.10;   // marge jointe : +petite sur mobile (vh plus haut)
+    const JOIN_OFF = hasHover ? 0.20 : 0.17;   // ~1 interligne sous "vous invite" (pas de collision, effet paragraphe)
     const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
     const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
     let heroTY, transTY;
@@ -644,32 +648,7 @@
     ticking = false;
   }
   window.addEventListener('scroll', onScroll, { passive: true });
-
-  /* ============================================================
-     2bis. V2 : descente automatique au clic sur le badge "cliquez"
-     Le ciel est figé ; un clic lance un scroll auto lent (easing) qui
-     rejoue tout le parallax (texte de transition inclus) jusqu'à la forêt.
-     ============================================================ */
-  function startDescent() {
-    if (hasHover) return;                            // desktop : scroll libre (comme V1)
-    if (!badgeRevealed) return;                      // V4 : pas de descente tant que le badge n'est pas apparu
-    if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
-    autoPlaying = true;
-    const dur = 9800;                                // mobile : descente plus posée
-    const t0 = performance.now();
-    // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
-    function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
-    function step(now) {
-      const t = Math.min((now - t0) / dur, 1);
-      v2Progress = ease(t) * SETTLE_AT;              // arrive = v2Progress / SETTLE_AT
-      updateScroll();
-      if (t < 1) requestAnimationFrame(step);
-      else { v2Progress = SETTLE_AT; autoPlaying = false; updateScroll(); }
-    }
-    requestAnimationFrame(step);
-  }
-  const cliquezBadge = document.getElementById('cliquez-badge');
-  if (cliquezBadge) cliquezBadge.addEventListener('click', startDescent);
+  // V6 : scroll réel partout (desktop + mobile) -> plus d'auto-descente au clic.
 
 
   /* ============================================================
@@ -890,7 +869,7 @@
   // V6 : RECOMMENCER -> retour à l'accueil (ciel), badge à re-dessiner.
   function restart() {
     completed = false; revealActive = false;
-    charge = 0; v2Progress = 0;
+    charge = 0;
     badgeRevealed = false; drawAmount = 0;
     forestSettled = false; returningToTop = true;
     if (badgeStack) badgeStack.classList.remove('transformed');
@@ -902,7 +881,7 @@
     txtFinal.style.transition = ''; txtFinal.style.opacity = '0';
     txtPrompt.style.opacity = '';
     if (skyBadge) skyBadge.style.opacity = '';
-    if (hasHover) window.scrollTo(0, 0);
+    window.scrollTo(0, 0);   // V6 : scroll réel partout
     updateScroll();
   }
   if (btnRestart) btnRestart.addEventListener('click', restart);
@@ -917,7 +896,7 @@
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.age++;
-      p.vy += PARAMS.gravity;
+      if (!p.ng) p.vy += PARAMS.gravity;   // paillettes "magiques" (ng) : sans gravité
       const wiggleX = Math.sin(p.age * p.wFreq + p.wPhase) * PARAMS.wiggle * 0.1;
       p.x += p.vx + wiggleX; p.y += p.vy; p.life -= PARAMS.decay;
       if (p.life <= 0) { particles.splice(i, 1); continue; }
