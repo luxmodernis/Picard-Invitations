@@ -610,7 +610,7 @@
     // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
     // montent ENSEMBLE comme un seul bloc.
     const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
-    const JOIN_OFF = hasHover ? 0.20 : 0.17;   // ~1 interligne sous "vous invite" (pas de collision, effet paragraphe)
+    const JOIN_OFF = hasHover ? 0.24 : 0.17;   // ~1 interligne sous "vous invite" (un peu + d'air sur desktop)
     const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
     const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
     let heroTY, transTY;
@@ -866,25 +866,11 @@
     }
   }
 
-  // V6 : RECOMMENCER -> retour à l'accueil (ciel), badge à re-dessiner.
-  function restart() {
-    completed = false; revealActive = false;
-    charge = 0;
-    badgeRevealed = false; drawAmount = 0;
-    forestSettled = false; returningToTop = true;
-    if (badgeStack) badgeStack.classList.remove('transformed');
-    if (btnRestart) btnRestart.classList.remove('show');
-    // reset des textes de révélation
-    ltrState = 'hidden'; clearTimeout(ltrTimer);
-    txtDate.style.transition = ''; txtDate.style.opacity = '0';
-    txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); s.style.opacity = ''; });
-    txtFinal.style.transition = ''; txtFinal.style.opacity = '0';
-    txtPrompt.style.opacity = '';
-    if (skyBadge) skyBadge.style.opacity = '';
-    window.scrollTo(0, 0);   // V6 : scroll réel partout
-    updateScroll();
-  }
-  if (btnRestart) btnRestart.addEventListener('click', restart);
+  // V6 : RECOMMENCER -> refresh complet de la page (reset propre, évite les bugs).
+  if (btnRestart) btnRestart.addEventListener('click', function () {
+    window.scrollTo(0, 0);
+    location.reload();
+  });
 
 
   /* ============================================================
