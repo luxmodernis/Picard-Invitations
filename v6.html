@@ -499,18 +499,21 @@
   // V6 : on DESSINE (particules + scroll bloqué) uniquement (1) avant la
   // transformation du badge (phase ciel) et (2) une fois en bas (révélation).
   // Entre les deux, le doigt / la molette défilent normalement, sans particules.
-  function isInteractive(t) { return t && t.closest && t.closest('#version-switch, .scroll-badge'); }
+  // Seule la barre de versions est exemptée (pour que les taps V1..V6 passent).
+  // Le badge N'EST PAS exempté -> en phase dessin le scroll est bloqué sur TOUT
+  // l'écran (badge inclus) et les particules s'émettent partout.
+  function onVersionBar(t) { return t && t.closest && t.closest('#version-switch'); }
   function drawPhase() { return !badgeRevealed || arrive > 0.98; }
   window.addEventListener('touchstart', function (e) {
-    if (isInteractive(e.target) || !drawPhase()) return;
+    if (onVersionBar(e.target) || !drawPhase()) return;
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
-    if (isInteractive(e.target) || !drawPhase()) return;   // phase descente : scroll libre, pas de particules
+    if (onVersionBar(e.target) || !drawPhase()) return;    // phase descente : scroll libre
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
-    e.preventDefault();                                    // dessin -> on bloque le scroll
+    e.preventDefault();                                    // dessin -> verrou de scroll sur tout l'écran
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
   // Desktop : molette/clavier bloqués pendant les phases de dessin (avant transfo + en bas).
@@ -610,7 +613,7 @@
     // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
     // montent ENSEMBLE comme un seul bloc.
     const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
-    const JOIN_OFF = joinOff;   // calculé sur l'interligne réel (computeJoinOff)
+    const JOIN_OFF = hasHover ? 0.22 : 0.17;   // écart "vous invite" <-> transition
     const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
     const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
     let heroTY, transTY;
@@ -662,30 +665,7 @@
   const txtFinal  = document.querySelector('.txt-final');
   const btnRestart = document.querySelector('.btn-restart');
   const transText = document.querySelector('.trans-text');
-  const inviteLine = document.querySelector('.invite-line');
   const chargeBar = document.getElementById('charge-bar');
-
-  // V6 : écart "vous invite" <-> "à un nouveau rendez-vous" = GAP_LINES interlignes
-  // du texte de transition (font-size x line-height). Constant sur tous les écrans.
-  const GAP_LINES = 1.4;
-  let joinOff = hasHover ? 0.22 : 0.17;   // fallback avant calcul
-  function computeJoinOff() {
-    if (!inviteLine || !transText) return;
-    const vh = window.innerHeight;
-    const h2 = transText.querySelector('h2') || transText;
-    const cs = getComputedStyle(h2);
-    const lineGap = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.12;
-    const transH = h2.getBoundingClientRect().height;   // translateY n'affecte pas la hauteur
-    // "vous invite" mesuré à sky-content non transformé
-    const prev = skyContent.style.transform;
-    skyContent.style.transform = 'translateY(0px)';
-    const invBottom = inviteLine.getBoundingClientRect().bottom;
-    skyContent.style.transform = prev;
-    // au join : haut du trans-text = bas de "vous invite" + GAP_LINES interlignes
-    joinOff = (invBottom + GAP_LINES * lineGap + transH / 2 - vh / 2) / vh;
-  }
-  computeJoinOff();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(computeJoinOff);
 
   /* Découpe chaque caractère non-espace en <span class="ltr" style="--i:N"> */
   function splitLetters(el) {
@@ -801,7 +781,7 @@
 
 
   window.addEventListener('resize', function () {
-    resizeCanvas(); computeJoinOff(); updateScroll(); initFireflies();
+    resizeCanvas(); updateScroll(); initFireflies();
   });
 
   function reveal() {
