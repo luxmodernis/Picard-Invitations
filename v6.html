@@ -179,6 +179,27 @@
   @media (hover: none) and (pointer: coarse) {
     .scroll-badge { width: clamp(198px, 21vw, 278px); }
   }
+
+  /* ===== V6 : badge "Dessinez" qui se transforme en "Cliquez/Scrollez" ===== */
+  .hero { display: flex; flex-direction: column; align-items: center; }
+  /* Pile de badges (hors flux) : les deux superposés au même endroit */
+  .badge-stack {
+    position: absolute; left: 50%; top: 64%;
+    transform: translateX(-50%);
+    display: grid; place-items: center;
+  }
+  .badge-stack > * { grid-area: 1 / 1; }
+  .badge-dessinez {
+    transition: transform 0.55s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.5s ease;
+  }
+  .badge-action {
+    opacity: 0; pointer-events: none;
+    transform: scale(0.5) rotate(-25deg);
+    transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+  }
+  /* Transformation "magique" : "Dessinez" grossit+tourne+s'efface, "action" éclot */
+  .badge-stack.transformed .badge-dessinez { transform: scale(1.7) rotate(30deg); opacity: 0; }
+  .badge-stack.transformed .badge-action { opacity: 1; pointer-events: auto; transform: scale(1) rotate(0deg); }
   /* Phrase d'invite en bas du ciel (fond comme "le compte à rebours…") */
   .draw-hint {
     position: absolute; left: 0; right: 0; bottom: 5.5vh; z-index: 12;
@@ -188,6 +209,7 @@
     color: var(--gold-soft); line-height: 1.65;
     text-shadow: none;
     will-change: opacity;
+    transition: opacity 0.6s ease;
   }
   @keyframes floaty {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
@@ -276,12 +298,26 @@
   /* "Le compte à rebours..." : petit texte en bas, à la place du bouton */
   .txt-final {
     align-self: end;
-    padding-bottom: 10vh;
-    font-size: clamp(0.9rem, 2.4vw, 1.3rem);
+    padding-bottom: 18vh;                       /* remonté pour laisser place au bouton */
+    font-size: clamp(1.08rem, 2.9vw, 1.56rem);  /* +20 % */
     color: var(--gold-soft);
     text-shadow: none;
     line-height: 1.65;
   }
+  /* Bouton "RECOMMENCER" (doré, sous le final) */
+  .btn-restart {
+    align-self: end; justify-self: center; margin-bottom: 7vh; z-index: 6;
+    font-family: 'Wulkan Display', Georgia, serif;
+    font-size: clamp(0.95rem, 2.4vw, 1.25rem); letter-spacing: 0.14em;
+    color: #2e1e1a;
+    background: linear-gradient(180deg, #f3d883 0%, var(--gold) 58%, #b8923e 100%);
+    border: none; border-radius: 999px;
+    padding: 0.7em 2.3em; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.45);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .btn-restart.show { opacity: 1; pointer-events: auto; }
 
   /* Texte de transition ciel → forêt */
   .trans-text {
@@ -291,15 +327,6 @@
     opacity: 0; will-change: opacity, transform;
   }
   .trans-text h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
-
-  /* V3 : "Picard vous invite" — même style que la transition, monte du bas */
-  .invite-beat {
-    position: absolute; inset: 0; z-index: 10;
-    display: grid; place-items: center;
-    text-align: center; pointer-events: none;
-    opacity: 0; will-change: transform, opacity;
-  }
-  .invite-beat h2 { font-size: clamp(2rem, 5.5vw, 3.8rem); letter-spacing: 0.06em; }
 
 
   /* ============ Barre de progression (clic maintenu) ============ */
@@ -318,10 +345,10 @@
 <nav id="version-switch" aria-label="Choix de version">
   <a href="./" class="vs-btn">V1</a>
   <a href="./v2.html" class="vs-btn">V2</a>
-  <a href="./v3.html" class="vs-btn vs-active">V3</a>
+  <a href="./v3.html" class="vs-btn">V3</a>
   <a href="./v4.html" class="vs-btn">V4</a>
   <a href="./v5.html" class="vs-btn">V5</a>
-  <a href="./v6.html" class="vs-btn">V6</a>
+  <a href="./v6.html" class="vs-btn vs-active">V6</a>
 </nav>
 
 <canvas id="particles"></canvas>
@@ -338,21 +365,24 @@
     <canvas id="ff-canvas"></canvas>
   </div>
 
-  <!-- V3 : accueil = logo + badge uniquement (pas de "vous invite" fixe) -->
+  <!-- V4 : accueil = logo + "vous invite" centrés ; le badge est masqué et
+       apparaît après qu'on ait dessiné (ou après un délai), en remontant le hero -->
+  <!-- V6 : logo + "vous invite" + badge "Dessinez" dès le départ. On doit dessiner
+       pour que le badge se transforme en "Cliquez"(mobile)/"Scrollez"(desktop). -->
   <div class="sky-content">
-    <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
-    <picture>
-      <!-- Tactile (mobile) : "cliquez" ; sinon (desktop, scroll) : "scrollez" -->
-      <source media="(hover: none) and (pointer: coarse)" srcset="IMG/cliquez.png">
-      <img id="cliquez-badge" class="scroll-badge" src="IMG/scroll.png" alt="Commencer l'aventure" draggable="false">
-    </picture>
-  </div>
-
-  <p class="draw-hint">Dessinez sur l'écran<br>pour révéler votre magie</p>
-
-  <!-- V3 : 1er temps au scroll -> "vous invite" monte du bas -->
-  <div class="invite-beat">
-    <h2>vous invite</h2>
+    <div class="hero">
+      <img class="logo" src="IMG/logo_Picard.png" alt="Picard" draggable="false">
+      <h1 class="invite-line">vous invite</h1>
+    </div>
+    <div class="badge-stack" id="badge-stack">
+      <picture class="badge-dessinez">
+        <img class="scroll-badge" src="IMG/Badge-X2-Dessinez.png" alt="Dessinez sur l'écran" draggable="false">
+      </picture>
+      <picture class="badge-action">
+        <source media="(hover: none) and (pointer: coarse)" srcset="IMG/Badge-X2-Cliquez.png">
+        <img id="cliquez-badge" class="scroll-badge" src="IMG/Badge-X2-Scrollez.png" alt="Commencer l'aventure" draggable="false">
+      </picture>
+    </div>
   </div>
 
   <div class="trans-text">
@@ -361,11 +391,12 @@
 
   <div class="forest-stage">
     <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.webp" alt="" draggable="false"></picture></div></div>
-    <p class="txt txt-prompt">Cliquez et<br>maintenez<br>pour révéler</p>
+    <p class="txt txt-prompt">Dessinez<br>des cercles<br>pour révéler</p>
     <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
     <p class="txt txt-final">
       Le compte à rebours est lancé !<br>Soyez prêts !
     </p>
+    <button class="btn-restart" type="button">RECOMMENCER</button>
   </div>
 
 
@@ -443,6 +474,9 @@
       const steps = Math.floor(dist / PARAMS.step);
       for (let i = 1; i <= steps; i++) { const t = i / steps; spawn(lastX + dx * t, lastY + dy * t, mult || 1); }
       lastX = x; lastY = y;
+      // V4 : accumule le "dessin" -> révèle le badge au seuil
+      drawAmount += dist;
+      if (!badgeRevealed && drawAmount >= DRAW_THRESHOLD) revealBadge();
     }
   }
   function pressStart(x, y) { pressed = true; lastX = x; lastY = y; spawn(x, y, 1); }
@@ -480,6 +514,13 @@
     if (!hasHover) e.preventDefault();   // mobile : verrou de scroll TOUJOURS (même sur le badge)
   }, { passive: false });
   window.addEventListener('touchend', pressEnd, { passive: true });
+  // V5 desktop : on bloque le scroll tant que le badge "scrollez" n'est pas affiché.
+  window.addEventListener('wheel', function (e) {
+    if (hasHover && !badgeRevealed) e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('keydown', function (e) {
+    if (hasHover && !badgeRevealed && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) e.preventDefault();
+  }, { passive: false });
 
 
   /* ============================================================
@@ -491,8 +532,29 @@
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
-  const drawHint   = document.querySelector('.draw-hint');
-  const skyBadge   = (function(){ const i = document.getElementById('cliquez-badge'); return i && i.parentElement; })(); // <picture> (l'img a une anim CSS qui écrase style.opacity)
+  const drawHint   = document.querySelector('.draw-hint');   // V6 : absent (null) -> usages no-op
+  const badgeStack = document.getElementById('badge-stack');
+  const skyBadge   = badgeStack;   // fondu du badge pendant la descente
+
+  // V6 : on DOIT dessiner pour transformer le badge (aucun filet de temps).
+  let drawAmount = 0;
+  let badgeRevealed = false;
+  const DRAW_THRESHOLD = hasHover ? 3800 : 1800;   // desktop : curseur accumule vite -> seuil + haut
+
+  // Gerbe de paillettes dorées au centre du badge (effet "magique").
+  function magicBurst() {
+    if (!badgeStack) return;
+    const r = badgeStack.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let i = 0; i < 44; i++) spawn(cx, cy, 2.6);
+  }
+  // Transforme le badge "Dessinez" -> "Cliquez"(mobile)/"Scrollez"(desktop).
+  function revealBadge() {
+    if (badgeRevealed) return;
+    badgeRevealed = true;
+    if (badgeStack) badgeStack.classList.add('transformed');
+    magicBurst();
+  }
 
   const SETTLE_AT = 0.72;   // forêt en place à 72% de la descente, figée ensuite
 
@@ -540,28 +602,35 @@
     const nuageStart = hasHover ? 0.42 : 0.65;
     nuages.style.transform = 'translateY(' + ((nuageStart - arrive * 1.75) * vh).toFixed(1) + 'px)';
 
-    // Contenu ciel : MONTE et sort par le haut, sans fondu d'opacité
-    skyContent.style.transform = 'translateY(' + (-arrive * vh * 1.25).toFixed(1) + 'px)';
+    // V5 : phase A -> "à un nouveau rendez-vous" monte REJOINDRE le bloc (logo +
+    // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
+    // montent ENSEMBLE comme un seul bloc.
+    const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
+    const JOIN_OFF = hasHover ? 0.16 : 0.10;   // marge jointe : +petite sur mobile (vh plus haut)
+    const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
+    const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
+    let heroTY, transTY;
+    if (arrive <= JOIN_AT) {
+      heroTY = 0;                                              // hero fixe
+      transTY = START_BOT + (JOIN_OFF - START_BOT) * (arrive / JOIN_AT);  // le texte rejoint
+    } else {
+      const rise = (arrive - JOIN_AT) * BLOCK_RISE;           // montée commune
+      heroTY = -rise;
+      transTY = JOIN_OFF - rise;
+    }
+    skyContent.style.transform = 'translateY(' + (heroTY * vh).toFixed(1) + 'px)';
 
     // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
-    if (drawHint) drawHint.style.opacity = clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
+    if (drawHint) drawHint.style.opacity = badgeRevealed ? '0' : clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
 
-    // V3 : le badge "png" disparaît vite dès qu'on amorce (avant que "vous invite" monte)
-    if (skyBadge) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
-
-    // V3 : "vous invite" monte du bas et défile à la MÊME vitesse que la
-    // transition (coef 1.95), simplement centré plus tôt (arrive ~0.24).
-    // Fondu d'apparition pour garder l'accueil propre (logo + badge seuls).
-    if (inviteBeat) {
-      inviteBeat.style.transform = 'translateY(' + ((0.468 - arrive * 1.95) * vh).toFixed(1) + 'px)';
-      inviteBeat.style.opacity = clamp((arrive - 0.05) / 0.12, 0, 1).toFixed(3);
-    }
+    // V2 : le badge "scrollez/cliquez" disparaît dès qu'on amorce (scroll/clic)
+    if (skyBadge && badgeRevealed) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
 
     // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
     // en scrollant, puis il remonte naturellement (passage unique, défilement
     // linéaire). Hors écran aux extrêmes -> pas besoin de fondu d'opacité.
     transText.style.opacity = '1';
-    transText.style.transform = 'translateY(' + ((0.9 - arrive * 1.95) * vh).toFixed(1) + 'px)';
+    transText.style.transform = 'translateY(' + (transTY * vh).toFixed(1) + 'px)';
 
     // Forêt : chaque couche = image entière ancrée en bas, montée par translateY.
     // fh = hauteur rendue de l'image (pleine largeur). Travel ≥ fh → couche
@@ -583,9 +652,10 @@
      ============================================================ */
   function startDescent() {
     if (hasHover) return;                            // desktop : scroll libre (comme V1)
+    if (!badgeRevealed) return;                      // V4 : pas de descente tant que le badge n'est pas apparu
     if (autoPlaying || v2Progress > 0.02) return;   // une seule fois, depuis le ciel
     autoPlaying = true;
-    const dur = 6800;                                // long -> vitesse max faible (message lisible)
+    const dur = 9800;                                // mobile : descente plus posée
     const t0 = performance.now();
     // easeInOutSine : ease-in puis ease-out, pic de vitesse doux au centre.
     function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
@@ -611,8 +681,8 @@
   const txtPrompt = document.querySelector('.txt-prompt');
   const txtDate   = document.querySelector('.txt-date');
   const txtFinal  = document.querySelector('.txt-final');
+  const btnRestart = document.querySelector('.btn-restart');
   const transText = document.querySelector('.trans-text');
-  const inviteBeat = document.querySelector('.invite-beat');
   const chargeBar = document.getElementById('charge-bar');
 
   /* Découpe chaque caractère non-espace en <span class="ltr" style="--i:N"> */
@@ -813,8 +883,29 @@
       // txtDate reste visible et fixe
       txtFinal.style.transition = 'opacity 1s ease 0.35s';
       txtFinal.style.opacity = '1';
+      if (btnRestart) btnRestart.classList.add('show');   // V6 : bouton RECOMMENCER
     }
   }
+
+  // V6 : RECOMMENCER -> retour à l'accueil (ciel), badge à re-dessiner.
+  function restart() {
+    completed = false; revealActive = false;
+    charge = 0; v2Progress = 0;
+    badgeRevealed = false; drawAmount = 0;
+    forestSettled = false; returningToTop = true;
+    if (badgeStack) badgeStack.classList.remove('transformed');
+    if (btnRestart) btnRestart.classList.remove('show');
+    // reset des textes de révélation
+    ltrState = 'hidden'; clearTimeout(ltrTimer);
+    txtDate.style.transition = ''; txtDate.style.opacity = '0';
+    txtDate.querySelectorAll('.ltr').forEach(function (s) { s.classList.remove('on'); s.style.opacity = ''; });
+    txtFinal.style.transition = ''; txtFinal.style.opacity = '0';
+    txtPrompt.style.opacity = '';
+    if (skyBadge) skyBadge.style.opacity = '';
+    if (hasHover) window.scrollTo(0, 0);
+    updateScroll();
+  }
+  if (btnRestart) btnRestart.addEventListener('click', restart);
 
 
   /* ============================================================
