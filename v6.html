@@ -32,23 +32,6 @@
   }
 
   /* Barre de bascule V1/V2 (TEMPORAIRE) */
-  #version-switch {
-    position: fixed; top: env(safe-area-inset-top, 0px); left: 50%;
-    transform: translateX(-50%); z-index: 100000;
-    display: flex; gap: 6px; padding: 6px;
-    background: rgba(4, 6, 15, 0.55); backdrop-filter: blur(6px);
-    border-radius: 0 0 12px 12px;
-  }
-  #version-switch .vs-btn {
-    font: 600 13px/1 system-ui, sans-serif; letter-spacing: 0.04em;
-    color: var(--gold-soft); text-decoration: none;
-    padding: 7px 14px; border-radius: 8px;
-    border: 1px solid rgba(201, 168, 76, 0.35);
-  }
-  #version-switch .vs-btn.vs-active {
-    background: var(--gold); color: #1a1206; border-color: var(--gold);
-  }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
 
@@ -341,15 +324,6 @@
 </head>
 <body>
 
-<!-- Barre de bascule V1/V2 (TEMPORAIRE — à retirer une fois une version validée) -->
-<nav id="version-switch" aria-label="Choix de version">
-  <a href="./" class="vs-btn">V1</a>
-  <a href="./v2.html" class="vs-btn">V2</a>
-  <a href="./v3.html" class="vs-btn">V3</a>
-  <a href="./v4.html" class="vs-btn">V4</a>
-  <a href="./v5.html" class="vs-btn">V5</a>
-  <a href="./v6.html" class="vs-btn vs-active">V6</a>
-</nav>
 
 <canvas id="particles"></canvas>
 <div id="charge-bar"></div>
@@ -504,15 +478,14 @@
   // Seule la barre de versions est exemptée (pour que les taps V1..V6 passent).
   // Le badge N'EST PAS exempté -> en phase dessin le scroll est bloqué sur TOUT
   // l'écran (badge inclus) et les particules s'émettent partout.
-  function onVersionBar(t) { return t && t.closest && t.closest('#version-switch'); }
   function drawPhase() { return !badgeRevealed || arrive > 0.98; }
   window.addEventListener('touchstart', function (e) {
-    if (onVersionBar(e.target) || !drawPhase()) return;
+    if (!drawPhase()) return;
     const t = e.touches[0];
     pressStart(t.clientX, t.clientY);
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
-    if (onVersionBar(e.target) || !drawPhase()) return;    // phase descente : scroll libre
+    if (!drawPhase()) return;    // phase descente : scroll libre
     const t = e.touches[0];
     emitTo(t.clientX, t.clientY, 1.8);
     e.preventDefault();                                    // dessin -> verrou de scroll sur tout l'écran
@@ -764,19 +737,19 @@
       const pulse = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(ff.phaseOp));
       const alpha = globalFade * pulse;
 
-      // Halo or doux (couleur orbe)
-      ffCtx.globalAlpha = alpha * 0.2;
-      ffCtx.shadowBlur = 20; ffCtx.shadowColor = '#f5c518';
+      // Halo diffus cuivré (rayon réduit, très transparent)
+      ffCtx.globalAlpha = alpha * 0.09;
+      ffCtx.shadowBlur = 38; ffCtx.shadowColor = '#c8722a';
       ffCtx.beginPath();
-      ffCtx.arc(ff.x, y, ff.size * 4.5, 0, Math.PI * 2);
-      ffCtx.fillStyle = '#f5c518'; ffCtx.fill();
+      ffCtx.arc(ff.x, y, ff.size * 2.8, 0, Math.PI * 2);
+      ffCtx.fillStyle = '#c8722a'; ffCtx.fill();
 
-      // Cœur brillant or/blanc
+      // Cœur cuivré/ambré
       ffCtx.globalAlpha = alpha;
-      ffCtx.shadowBlur = 8; ffCtx.shadowColor = '#ffe680';
+      ffCtx.shadowBlur = 6; ffCtx.shadowColor = '#e8a050';
       ffCtx.beginPath();
       ffCtx.arc(ff.x, y, ff.size, 0, Math.PI * 2);
-      ffCtx.fillStyle = '#fff0a0'; ffCtx.fill();
+      ffCtx.fillStyle = '#f0b86a'; ffCtx.fill();
     }
     ffCtx.globalAlpha = 1; ffCtx.shadowBlur = 0;
   }
