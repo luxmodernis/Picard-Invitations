@@ -31,9 +31,8 @@
     --body: #c8c8e0;
   }
 
-  /* Barre de bascule V1/V2 (TEMPORAIRE) */
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { overflow-anchor: none; }
 
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -349,13 +348,8 @@
       <h1 class="invite-line">vous invite</h1>
     </div>
     <div class="badge-stack" id="badge-stack">
-      <picture class="badge-dessinez">
-        <img class="scroll-badge" src="IMG/Badge-X2-Dessinez.png" alt="Dessinez sur l'écran" draggable="false">
-      </picture>
-      <picture class="badge-action">
-        <!-- V6 : "Scrollez" sur mobile ET desktop (on scrolle dans les deux cas) -->
-        <img id="cliquez-badge" class="scroll-badge" src="IMG/Badge-X2-Scrollez.png" alt="Scrollez pour continuer" draggable="false">
-      </picture>
+      <img class="scroll-badge badge-dessinez" src="IMG/Badge-X2-Dessinez.png" alt="Dessinez sur l'écran" draggable="false">
+      <img class="scroll-badge badge-action" src="IMG/Badge-X2-Scrollez.png" alt="Scrollez pour continuer" draggable="false">
     </div>
   </div>
 
@@ -398,14 +392,15 @@
   if (hasHover) document.body.classList.add('custom-cursor');
 
   let DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let VW = window.innerWidth, VH = window.innerHeight;
   function resizeCanvas() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const w = window.innerWidth, h = window.innerHeight;
-    canvas.width = Math.floor(w * DPR); canvas.height = Math.floor(h * DPR);
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    VW = window.innerWidth; VH = window.innerHeight;
+    canvas.width = Math.floor(VW * DPR); canvas.height = Math.floor(VH * DPR);
+    canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ffCanvas.width = Math.floor(w * DPR); ffCanvas.height = Math.floor(h * DPR);
-    ffCanvas.style.width = w + 'px'; ffCanvas.style.height = h + 'px';
+    ffCanvas.width = Math.floor(VW * DPR); ffCanvas.height = Math.floor(VH * DPR);
+    ffCanvas.style.width = VW + 'px'; ffCanvas.style.height = VH + 'px';
     ffCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   resizeCanvas();
@@ -509,7 +504,6 @@
   const f2 = document.querySelector('.f2');
   const f3 = document.querySelector('.f3');
   const skyContent = document.querySelector('.sky-content');
-  const drawHint   = document.querySelector('.draw-hint');   // V6 : absent (null) -> usages no-op
   const badgeStack = document.getElementById('badge-stack');
   const skyBadge   = badgeStack;   // fondu du badge pendant la descente
 
@@ -559,16 +553,12 @@
   function onScroll() { if (!ticking) { requestAnimationFrame(updateScroll); ticking = true; } }
 
   function updateScroll() {
-    const vh = window.innerHeight;
-    const maxScroll = (document.documentElement.scrollHeight - vh) || 1;
-    // V6 : scroll réel pour desktop ET mobile.
+    const maxScroll = (document.documentElement.scrollHeight - VH) || 1;
     const p = clamp((window.scrollY || window.pageYOffset) / maxScroll, 0, 1);
     arrive = completed ? 1 : clamp(p / SETTLE_AT, 0, 1);
 
-    // Retour "Recommencer" terminé dès qu'on est près du haut
     if (p < 0.02) returningToTop = false;
 
-    // Rattrape le scroll résiduel (28 %) une fois la forêt posée.
     if (arrive >= 1 && !forestSettled && !returningToTop) {
       forestSettled = true;
       clearTimeout(autoScrollTimer);
@@ -577,48 +567,31 @@
       }, 250);
     }
 
-    // Ciel : léger drift (fond lointain -> bouge le moins)
-    ciel.style.transform = 'translateY(' + (-arrive * vh * 0.12).toFixed(1) + 'px) scale(1.05)';
+    ciel.style.transform = 'translateY(' + (-arrive * VH * 0.12).toFixed(1) + 'px) scale(1.05)';
 
-    // Nuage : plus bas au départ sur mobile (0.65) vs desktop (0.42)
     const nuageStart = hasHover ? 0.42 : 0.65;
-    nuages.style.transform = 'translateY(' + ((nuageStart - arrive * 1.75) * vh).toFixed(1) + 'px)';
+    nuages.style.transform = 'translateY(' + ((nuageStart - arrive * 1.75) * VH).toFixed(1) + 'px)';
 
-    // V5 : phase A -> "à un nouveau rendez-vous" monte REJOINDRE le bloc (logo +
-    // "vous invite", qui reste fixe), juste en dessous. Phase B -> les deux
-    // montent ENSEMBLE comme un seul bloc.
-    const JOIN_AT = 0.42;     // arrive où le texte a rejoint le hero
-    const JOIN_OFF = hasHover ? 0.22 : 0.17;   // écart "vous invite" <-> transition
-    const START_BOT = 0.95;   // départ du texte (hors écran, en bas)
-    const BLOCK_RISE = 2.6;   // vitesse de montée du bloc joint
+    const JOIN_AT = 0.42;
+    const JOIN_OFF = hasHover ? 0.22 : 0.17;
+    const START_BOT = 0.95;
+    const BLOCK_RISE = 2.6;
     let heroTY, transTY;
     if (arrive <= JOIN_AT) {
-      heroTY = 0;                                              // hero fixe
-      transTY = START_BOT + (JOIN_OFF - START_BOT) * (arrive / JOIN_AT);  // le texte rejoint
+      heroTY = 0;
+      transTY = START_BOT + (JOIN_OFF - START_BOT) * (arrive / JOIN_AT);
     } else {
-      const rise = (arrive - JOIN_AT) * BLOCK_RISE;           // montée commune
+      const rise = (arrive - JOIN_AT) * BLOCK_RISE;
       heroTY = -rise;
       transTY = JOIN_OFF - rise;
     }
-    skyContent.style.transform = 'translateY(' + (heroTY * vh).toFixed(1) + 'px)';
+    skyContent.style.transform = 'translateY(' + (heroTY * VH).toFixed(1) + 'px)';
 
-    // Phrase d'invite : visible au ciel, disparaît dès qu'on amorce la descente
-    if (drawHint) drawHint.style.opacity = badgeRevealed ? '0' : clamp(1 - arrive / 0.18, 0, 1).toFixed(3);
-
-    // V2 : le badge "scrollez/cliquez" disparaît dès qu'on amorce (scroll/clic)
     if (skyBadge && badgeRevealed) skyBadge.style.opacity = clamp(1 - arrive / 0.08, 0, 1).toFixed(3);
 
-    // Texte de transition : positionné entre le ciel et l'orbe. On tombe dessus
-    // en scrollant, puis il remonte naturellement (passage unique, défilement
-    // linéaire). Hors écran aux extrêmes -> pas besoin de fondu d'opacité.
-    transText.style.opacity = '1';
-    transText.style.transform = 'translateY(' + (transTY * vh).toFixed(1) + 'px)';
+    transText.style.transform = 'translateY(' + (transTY * VH).toFixed(1) + 'px)';
 
-    // Forêt : chaque couche = image entière ancrée en bas, montée par translateY.
-    // fh = hauteur rendue de l'image (pleine largeur). Travel ≥ fh → couche
-    // totalement hors écran (bas) à arrive=0 ; à arrive=1 → 0 (sol ancré en bas).
-    // Travels différenciés → parallaxe (le 1er plan se déplace le plus).
-    const fh = window.innerWidth * 2383 / 1920;
+    const fh = VW * 2383 / 1920;
     f3.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.00).toFixed(1) + 'px)';
     f2.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.15).toFixed(1) + 'px)';
     f1.style.transform = 'translateY(' + ((1 - arrive) * fh * 1.32).toFixed(1) + 'px)';
@@ -714,44 +687,43 @@
   initFireflies();
 
   function drawFireflies() {
-    ffCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    if (arrive < 0.84) return;
+    if (arrive < 0.84) { ffCtx.clearRect(0, 0, VW, VH); return; }
 
-    // Fade global : apparaissent entre 0.84 et 1
+    ffCtx.clearRect(0, 0, VW, VH);
     const globalFade = clamp((arrive - 0.84) / 0.16, 0, 1);
-    // "Arrivent du bas" avec la forêt : décalage Y qui se résorbe
-    const ffSettle = clamp((arrive - 0.84) / 0.16, 0, 1);
-    const riseOffset = (1 - ffSettle) * window.innerHeight * 0.55;
-    const vw = window.innerWidth;
+    const riseOffset = (1 - globalFade) * VH * 0.55;
 
     for (let i = 0; i < fireflies.length; i++) {
       const ff = fireflies[i];
       ff.phaseY  += ff.freqY;
       ff.phaseOp += ff.freqOp;
       ff.x += ff.vx;
-      if (ff.x < -10) ff.x = vw + 5;
-      if (ff.x > vw + 10) ff.x = -5;
+      if (ff.x < -10) ff.x = VW + 5;
+      if (ff.x > VW + 10) ff.x = -5;
 
       const bobY = Math.sin(ff.phaseY) * ff.ampY;
       const y = ff.baseY + bobY + riseOffset;
       const pulse = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(ff.phaseOp));
       const alpha = globalFade * pulse;
 
-      // Halo diffus cuivré (rayon réduit, très transparent)
-      ffCtx.globalAlpha = alpha * 0.09;
-      ffCtx.shadowBlur = 38; ffCtx.shadowColor = '#c8722a';
+      // Halo : dégradé radial (pas de shadowBlur -> zéro coût GPU off-screen)
+      const haloR = ff.size * 4.5;
+      const grad = ffCtx.createRadialGradient(ff.x, y, 0, ff.x, y, haloR);
+      grad.addColorStop(0, 'rgba(200,114,42,' + (alpha * 0.45).toFixed(3) + ')');
+      grad.addColorStop(1, 'rgba(200,114,42,0)');
       ffCtx.beginPath();
-      ffCtx.arc(ff.x, y, ff.size * 2.8, 0, Math.PI * 2);
-      ffCtx.fillStyle = '#c8722a'; ffCtx.fill();
+      ffCtx.arc(ff.x, y, haloR, 0, Math.PI * 2);
+      ffCtx.fillStyle = grad; ffCtx.fill();
 
-      // Cœur cuivré/ambré
+      // Cœur cuivré/ambré (shadowBlur léger sur desktop seulement)
       ffCtx.globalAlpha = alpha;
-      ffCtx.shadowBlur = 6; ffCtx.shadowColor = '#e8a050';
+      if (hasHover) { ffCtx.shadowBlur = 5; ffCtx.shadowColor = '#e8a050'; }
       ffCtx.beginPath();
       ffCtx.arc(ff.x, y, ff.size, 0, Math.PI * 2);
       ffCtx.fillStyle = '#f0b86a'; ffCtx.fill();
+      if (hasHover) ffCtx.shadowBlur = 0;
     }
-    ffCtx.globalAlpha = 1; ffCtx.shadowBlur = 0;
+    ffCtx.globalAlpha = 1;
   }
 
 
@@ -759,13 +731,14 @@
     resizeCanvas(); updateScroll(); initFireflies();
   });
 
+  // opacity fixe : posé une fois, jamais réécrire chaque frame
+  transText.style.opacity = '1';
+
+  let lastFilter = '';
   function reveal() {
-    // L'orbe apparaît quand la forêt se pose
     const orbeIn = clamp((arrive - 0.55) / 0.45, 0, 1);
     revealActive = arrive > 0.98 && !completed;
 
-    // V6 : la jauge se remplit en DESSINANT (mouvement récent) — desktop sans
-    // clic comme mobile — ou en maintenant (bonus). Sinon elle redescend.
     const drawing = (performance.now() - lastDrawT) < 140;
     if (revealActive && (drawing || pressed)) {
       charge = clamp(charge + CHARGE_UP, 0, 1);
@@ -773,12 +746,12 @@
       charge = clamp(charge - CHARGE_DOWN, 0, 1);
     }
 
-    // Flou des décors + voile bleu, pilotés par la charge
-    bgwrap.style.filter = charge > 0.001 ? 'blur(' + (charge * MAX_BLUR).toFixed(2) + 'px)' : 'none';
+    // Flou des décors + voile bleu (guard pour éviter les style recalc inutiles)
+    const nextFilter = charge > 0.001 ? 'blur(' + (charge * MAX_BLUR).toFixed(2) + 'px)' : 'none';
+    if (nextFilter !== lastFilter) { bgwrap.style.filter = nextFilter; lastFilter = nextFilter; }
     veil.style.opacity = (charge * 0.55).toFixed(3);
 
-    // Orbe + prompt : arrivent du bas avec la forêt
-    const orbeRise = (1 - orbeIn) * window.innerHeight * 0.70;
+    const orbeRise = (1 - orbeIn) * VH * 0.70;
     orbeWrap.style.opacity = orbeIn.toFixed(3);
     orbeWrap.style.transform = 'translateY(' + orbeRise.toFixed(1) + 'px) scale(' + (0.82 + charge * 1.7).toFixed(3) + ')';
 
