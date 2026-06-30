@@ -66,14 +66,7 @@
     pointer-events: none; z-index: 9999;
   }
 
-  /* Canvas lucioles : dans bgwrap -> reçoit le flou au clic maintenu */
-  #ff-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    pointer-events: none; z-index: 7;
-  }
-
-  /* ============ Scène fixe (scrollytelling) ============ */
+/* ============ Scène fixe (scrollytelling) ============ */
   .stage-fixed { position: fixed; inset: 0; overflow: hidden; z-index: 1; }
   .scroll-driver { height: 300vh; }   /* longueur de scroll de la descente */
 
@@ -335,7 +328,6 @@
     <div class="bg foret f2"></div>
     <div class="bg foret f1"></div>
     <div class="veil"></div>
-    <canvas id="ff-canvas"></canvas>
   </div>
 
   <!-- V4 : accueil = logo + "vous invite" centrés ; le badge est masqué et
@@ -349,7 +341,7 @@
     </div>
     <div class="badge-stack" id="badge-stack">
       <div class="badge-dessinez"><img class="scroll-badge" src="IMG/Badge-X2-Dessinez.png" alt="Dessinez sur l'écran" draggable="false"></div>
-      <div class="badge-action"><img class="scroll-badge" src="IMG/Badge-X2-Scrollez.png" alt="Scrollez pour continuer" draggable="false"></div>
+      <div class="badge-action"><img class="scroll-badge" src="IMG/Badge-X2-Defiler.png" alt="Défilez pour continuer" draggable="false"></div>
     </div>
   </div>
 
@@ -360,7 +352,7 @@
   <div class="forest-stage">
     <div class="orbe-wrap"><div class="orbe-spin"><picture><source srcset="IMG/ORBES.webp" type="image/webp"><img src="IMG/ORBES.webp" alt="" draggable="false"></picture></div></div>
     <p class="txt txt-prompt">Dessinez<br>des cercles<br>pour révéler</p>
-    <p class="txt txt-date">Rendez-vous<br>sur la Bon'App,<br>le 31 Août 2026,<br><span class="hour">11:11</span></p>
+    <p class="txt txt-date">Rendez-vous<br>sur la Bon'App<br>le 31 Août 2026<br><span class="hour">11h11</span></p>
     <p class="txt txt-final">
       Le compte à rebours est lancé !<br>Soyez prêts !
     </p>
@@ -385,8 +377,6 @@
 
   const canvas = document.getElementById('particles');
   const ctx = canvas.getContext('2d');
-  const ffCanvas = document.getElementById('ff-canvas');
-  const ffCtx = ffCanvas.getContext('2d');
 
   const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   if (hasHover) document.body.classList.add('custom-cursor');
@@ -399,9 +389,6 @@
     canvas.width = Math.floor(VW * DPR); canvas.height = Math.floor(VH * DPR);
     canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ffCanvas.width = Math.floor(VW * DPR); ffCanvas.height = Math.floor(VH * DPR);
-    ffCanvas.style.width = VW + 'px'; ffCanvas.style.height = VH + 'px';
-    ffCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
   resizeCanvas();
 
@@ -411,7 +398,7 @@
   const particles = [];
 
   // mult : multiplicateur de densité (0.4 = trail léger, 3.5 = clic maintenu)
-  const MAX_PARTICLES = 600;  // borne le coût de rendu (machines lentes)
+  const MAX_PARTICLES = 350;  // borne le coût de rendu (machines lentes)
   function spawn(x, y, mult) {
     const n = Math.max(1, Math.round(PARAMS.density * (mult || 1)));
     // Au plafond : on recycle les plus anciennes (déjà en train de mourir) au lieu
@@ -648,87 +635,14 @@
   let barVisible = false;
   let ltrState = 'hidden'; // 'hidden' | 'showing' | 'visible'
   let ltrTimer  = null;
-  const CHARGE_UP = 0.009;
+  const CHARGE_UP = 0.016;
   const CHARGE_DOWN = 0.02;
   const MAX_BLUR = 14;
 
 
 
-  /* ============================================================
-     LUCIOLES — flottent doucement au-dessus du sol de la forêt
-     ============================================================ */
-  const NUM_FF = 13;
-  const fireflies = [];
-
-  function makeFirefly() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // Mobile : taille réduite, positionnées plus bas (près du sol)
-    const szMult  = hasHover ? 1   : 0.42;
-    const yBase   = hasHover ? 0.58 : 0.72;
-    const yRange  = hasHover ? 0.34 : 0.20;
-    return {
-      x: vw * (0.04 + Math.random() * 0.92),
-      baseY: vh * (yBase + Math.random() * yRange),
-      vx: (Math.random() - 0.5) * 0.35,
-      phaseY: Math.random() * Math.PI * 2,
-      freqY: 0.004 + Math.random() * 0.006,
-      ampY: (hasHover ? 10 : 6) + Math.random() * (hasHover ? 22 : 12),
-      phaseOp: Math.random() * Math.PI * 2,
-      freqOp: 0.008 + Math.random() * 0.012,
-      size: (1.6 + Math.random() * 1.8) * szMult,
-    };
-  }
-
-  function initFireflies() {
-    fireflies.length = 0;
-    for (let i = 0; i < NUM_FF; i++) fireflies.push(makeFirefly());
-  }
-  initFireflies();
-
-  function drawFireflies() {
-    if (arrive < 0.84) { ffCtx.clearRect(0, 0, VW, VH); return; }
-
-    ffCtx.clearRect(0, 0, VW, VH);
-    const globalFade = clamp((arrive - 0.84) / 0.16, 0, 1);
-    const riseOffset = (1 - globalFade) * VH * 0.55;
-
-    for (let i = 0; i < fireflies.length; i++) {
-      const ff = fireflies[i];
-      ff.phaseY  += ff.freqY;
-      ff.phaseOp += ff.freqOp;
-      ff.x += ff.vx;
-      if (ff.x < -10) ff.x = VW + 5;
-      if (ff.x > VW + 10) ff.x = -5;
-
-      const bobY = Math.sin(ff.phaseY) * ff.ampY;
-      const y = ff.baseY + bobY + riseOffset;
-      const pulse = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(ff.phaseOp));
-      const alpha = globalFade * pulse;
-
-      // Halo : dégradé radial (pas de shadowBlur -> zéro coût GPU off-screen)
-      const haloR = ff.size * 4.5;
-      const grad = ffCtx.createRadialGradient(ff.x, y, 0, ff.x, y, haloR);
-      grad.addColorStop(0, 'rgba(200,114,42,' + (alpha * 0.45).toFixed(3) + ')');
-      grad.addColorStop(1, 'rgba(200,114,42,0)');
-      ffCtx.beginPath();
-      ffCtx.arc(ff.x, y, haloR, 0, Math.PI * 2);
-      ffCtx.fillStyle = grad; ffCtx.fill();
-
-      // Cœur cuivré/ambré (shadowBlur léger sur desktop seulement)
-      ffCtx.globalAlpha = alpha;
-      if (hasHover) { ffCtx.shadowBlur = 5; ffCtx.shadowColor = '#e8a050'; }
-      ffCtx.beginPath();
-      ffCtx.arc(ff.x, y, ff.size, 0, Math.PI * 2);
-      ffCtx.fillStyle = '#f0b86a'; ffCtx.fill();
-      if (hasHover) ffCtx.shadowBlur = 0;
-    }
-    ffCtx.globalAlpha = 1;
-  }
-
-
   window.addEventListener('resize', function () {
-    resizeCanvas(); updateScroll(); initFireflies();
+    resizeCanvas(); updateScroll();
   });
 
   // opacity fixe : posé une fois, jamais réécrire chaque frame
@@ -856,7 +770,6 @@
       ctx.lineWidth = 1; ctx.stroke();
     }
 
-    drawFireflies();
     reveal();
     requestAnimationFrame(render);
   }
